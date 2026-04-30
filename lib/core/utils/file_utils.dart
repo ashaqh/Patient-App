@@ -50,8 +50,6 @@ class FileUtils {
   
   // Save file to app directory
   static Future<File> saveFile(File sourceFile, String destinationPath) async {
-    final destinationFile = File(destinationPath);
-    
     // Create parent directory if it doesn't exist
     final parentDir = Directory(path.dirname(destinationPath));
     if (!await parentDir.exists()) {
@@ -77,7 +75,7 @@ class FileUtils {
     final sizeInBytes = file.lengthSync();
     
     if (sizeInBytes < 1024) {
-      return '${sizeInBytes} B';
+      return '$sizeInBytes B';
     } else if (sizeInBytes < 1024 * 1024) {
       return '${(sizeInBytes / 1024).toStringAsFixed(1)} KB';
     } else if (sizeInBytes < 1024 * 1024 * 1024) {

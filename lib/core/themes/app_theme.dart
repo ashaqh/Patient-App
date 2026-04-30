@@ -37,8 +37,8 @@ class AppTheme {
       outlinedButtonTheme: _elderlyFriendlyOutlinedButtonTheme,
       textButtonTheme: _elderlyFriendlyTextButtonTheme,
       appBarTheme: _elderlyFriendlyAppBarTheme,
-      cardTheme: _elderlyFriendlyCardTheme,
-      dialogTheme: _elderlyFriendlyDialogTheme,
+      cardTheme: _elderlyFriendlyCardThemeData,
+      dialogTheme: _elderlyFriendlyDialogThemeData,
     );
   }
   
@@ -65,8 +65,8 @@ class AppTheme {
       outlinedButtonTheme: _elderlyFriendlyOutlinedButtonTheme,
       textButtonTheme: _elderlyFriendlyTextButtonTheme,
       appBarTheme: _elderlyFriendlyAppBarTheme,
-      cardTheme: _elderlyFriendlyCardTheme,
-      dialogTheme: _elderlyFriendlyDialogTheme,
+      cardTheme: _elderlyFriendlyCardThemeData,
+      dialogTheme: _elderlyFriendlyDialogThemeData,
     );
   }
   
@@ -184,8 +184,8 @@ class AppTheme {
   }
   
   // Card theme with clear elevation and padding
-  static CardTheme get _elderlyFriendlyCardTheme {
-    return CardTheme(
+  static CardThemeData get _elderlyFriendlyCardThemeData {
+    return CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -195,8 +195,8 @@ class AppTheme {
   }
   
   // Dialog theme with large text and clear layout
-  static DialogTheme get _elderlyFriendlyDialogTheme {
-    return DialogTheme(
+  static DialogThemeData get _elderlyFriendlyDialogThemeData {
+    return DialogThemeData(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
