@@ -3,6 +3,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 import 'database_constants.dart';
+import 'migration_manager.dart';
+import '../../core/utils/error_utils.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -48,7 +50,7 @@ class DatabaseHelper {
     try {
       // Backup before migration
       final backupPath = await MigrationManager.backupDatabase(db);
-      print('Database backup created at: $backupPath');
+      ErrorUtils.logInfo('Database backup created at: $backupPath', tag: 'Database');
       
       // Apply migrations
       await MigrationManager.migrate(db, oldVersion, newVersion);
@@ -59,12 +61,17 @@ class DatabaseHelper {
       // Record successful migration
       await MigrationManager.recordMigration(db, oldVersion, newVersion, true, null);
       
-      print('Database migrated from version $oldVersion to $newVersion');
-    } catch (e) {
+      ErrorUtils.logInfo('Database migrated from version $oldVersion to $newVersion', tag: 'Database');
+    } catch (e, stackTrace) {
       // Record failed migration
       await MigrationManager.recordMigration(db, oldVersion, newVersion, false, e.toString());
       
-      print('Database migration failed: $e');
+      ErrorUtils.logError(
+        'Database migration failed from version $oldVersion to $newVersion',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'Database',
+      );
       rethrow;
     }
   }
@@ -72,21 +79,26 @@ class DatabaseHelper {
   // Handle database downgrades (should rarely happen)
   Future<void> _onDowngrade(Database db, int oldVersion, int newVersion) async {
     try {
-      print('Database downgrade requested from $oldVersion to $newVersion');
+      ErrorUtils.logWarning('Database downgrade requested from $oldVersion to $newVersion', tag: 'Database');
       
       // Attempt rollback
       final success = await MigrationManager.rollbackMigration(db, newVersion);
       
       if (success) {
         await MigrationManager.recordMigration(db, oldVersion, newVersion, true, 'Downgrade successful');
-        print('Database downgraded from version $oldVersion to $newVersion');
+        ErrorUtils.logInfo('Database downgraded from version $oldVersion to $newVersion', tag: 'Database');
       } else {
         await MigrationManager.recordMigration(db, oldVersion, newVersion, false, 'Downgrade failed');
         throw Exception('Database downgrade failed');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       await MigrationManager.recordMigration(db, oldVersion, newVersion, false, e.toString());
-      print('Database downgrade failed: $e');
+      ErrorUtils.logError(
+        'Database downgrade failed from version $oldVersion to $newVersion',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'Database',
+      );
       rethrow;
     }
   }

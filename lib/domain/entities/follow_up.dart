@@ -4,7 +4,22 @@ enum FollowUpStatus {
   scheduled,
   completed,
   cancelled,
-  rescheduled,
+  rescheduled;
+
+  static FollowUpStatus fromDbValue(int value) {
+    switch (value) {
+      case 0:
+        return FollowUpStatus.scheduled;
+      case 1:
+        return FollowUpStatus.completed;
+      case 2:
+        return FollowUpStatus.cancelled;
+      case 3:
+        return FollowUpStatus.rescheduled;
+      default:
+        return FollowUpStatus.scheduled;
+    }
+  }
 }
 
 extension FollowUpStatusExtension on FollowUpStatus {
@@ -44,21 +59,6 @@ extension FollowUpStatusExtension on FollowUpStatus {
         return 2;
       case FollowUpStatus.rescheduled:
         return 3;
-    }
-  }
-
-  static FollowUpStatus fromDbValue(int value) {
-    switch (value) {
-      case 0:
-        return FollowUpStatus.scheduled;
-      case 1:
-        return FollowUpStatus.completed;
-      case 2:
-        return FollowUpStatus.cancelled;
-      case 3:
-        return FollowUpStatus.rescheduled;
-      default:
-        return FollowUpStatus.scheduled;
     }
   }
 }

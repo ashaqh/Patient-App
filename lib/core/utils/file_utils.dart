@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class FileUtils {
   // Get application documents directory
@@ -147,6 +148,106 @@ class FileUtils {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+  
+  // Save prescription file to app directory
+  static Future<Map<String, dynamic>> savePrescriptionFile(File sourceFile) async {
+    try {
+      final prescriptionsDir = await prescriptionsDirectory;
+      final originalName = path.basename(sourceFile.path);
+      final fileExtension = path.extension(originalName);
+      final uniqueName = 'prescription_${const Uuid().v4()}$fileExtension';
+      final destinationPath = path.join(prescriptionsDir.path, uniqueName);
+      
+      // Save file
+      final savedFile = await saveFile(sourceFile, destinationPath);
+      
+      // Get file info
+      final fileSize = savedFile.lengthSync() / 1024; // KB
+      final fileType = getFileType(fileExtension);
+      
+      return {
+        'file': savedFile,
+        'path': savedFile.path,
+        'name': originalName,
+        'uniqueName': uniqueName,
+        'type': fileType,
+        'size': fileSize,
+        'extension': fileExtension,
+      };
+    } catch (e) {
+      throw Exception('Failed to save prescription file: $e');
+    }
+  }
+  
+  // Get readable file type from extension
+  static String getFileType(String extension) {
+    final ext = extension.toLowerCase();
+    
+    if (ext == '.pdf') {
+      return 'PDF Document';
+    } else if (ext == '.jpg' || ext == '.jpeg') {
+      return 'JPEG Image';
+    } else if (ext == '.png') {
+      return 'PNG Image';
+    } else if (ext == '.gif') {
+      return 'GIF Image';
+    } else if (ext == '.bmp') {
+      return 'Bitmap Image';
+    } else if (ext == '.webp') {
+      return 'WebP Image';
+    } else if (ext == '.doc' || ext == '.docx') {
+      return 'Word Document';
+    } else if (ext == '.txt') {
+      return 'Text File';
+    } else if (ext == '.rtf') {
+      return 'Rich Text File';
+    } else {
+      return 'File';
+    }
+  }
+  
+  // Delete prescription file
+  static Future<bool> deletePrescriptionFile(String filePath) async {
+    return await deleteFile(filePath);
+  }
+  
+  // Check if file is within allowed size (10MB)
+  static bool isFileSizeValid(File file, {int maxSizeMB = 10}) {
+    final sizeInBytes = file.lengthSync();
+    final maxSizeBytes = maxSizeMB * 1024 * 1024;
+    return sizeInBytes <= maxSizeBytes;
+  }
+  
+  // Get file MIME type
+  static String getMimeType(String filename) {
+    final extension = getFileExtension(filename);
+    
+    switch (extension) {
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.gif':
+        return 'image/gif';
+      case '.bmp':
+        return 'image/bmp';
+      case '.webp':
+        return 'image/webp';
+      case '.pdf':
+        return 'application/pdf';
+      case '.doc':
+        return 'application/msword';
+      case '.docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case '.txt':
+        return 'text/plain';
+      case '.rtf':
+        return 'application/rtf';
+      default:
+        return 'application/octet-stream';
     }
   }
   

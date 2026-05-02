@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 import 'database_constants.dart';
+import '../../core/utils/error_utils.dart';
 
 class MigrationManager {
   // Migration scripts for each version
@@ -81,7 +83,7 @@ class MigrationManager {
           await txn.execute(migration);
         } catch (e) {
           // Log migration error but continue
-          print('Migration $version failed: $e\nSQL: $migration');
+          ErrorUtils.logInfo('Migration $version failed: $e\nSQL: $migration');
           // In production, you might want to handle this more gracefully
           // For now, we'll rethrow to fail the migration
           rethrow;
@@ -141,7 +143,7 @@ class MigrationManager {
         },
       );
     } catch (e) {
-      print('Failed to set schema version: $e');
+      ErrorUtils.logInfo('Failed to set schema version: $e');
     }
   }
 
@@ -154,15 +156,16 @@ class MigrationManager {
   // Backup database before migration (simplified)
   static Future<String?> backupDatabase(Database db) async {
     try {
-      // Get database path
-      final path = await db.getPath();
+      // Get database path using getDatabasesPath from sqflite
+      final databasesPath = await getDatabasesPath();
+      final path = join(databasesPath, DatabaseConstants.databaseName);
       final backupPath = '$path.backup_${DateTime.now().millisecondsSinceEpoch}';
       
       // In a real app, you would copy the database file here
       // For now, we'll just return the backup path
       return backupPath;
     } catch (e) {
-      print('Failed to backup database: $e');
+      ErrorUtils.logInfo('Failed to backup database: $e');
       return null;
     }
   }
@@ -184,7 +187,7 @@ class MigrationManager {
         );
         
         if (result.isEmpty) {
-          print('Missing table: $table');
+          ErrorUtils.logInfo('Missing table: $table');
           return false;
         }
       }
@@ -192,13 +195,13 @@ class MigrationManager {
       // Check schema version
       final currentVersion = await getCurrentSchemaVersion(db);
       if (currentVersion != expectedVersion) {
-        print('Schema version mismatch: expected $expectedVersion, got $currentVersion');
+        ErrorUtils.logInfo('Schema version mismatch: expected $expectedVersion, got $currentVersion');
         return false;
       }
       
       return true;
     } catch (e) {
-      print('Schema validation failed: $e');
+      ErrorUtils.logInfo('Schema validation failed: $e');
       return false;
     }
   }
@@ -257,7 +260,7 @@ class MigrationManager {
         },
       );
     } catch (e) {
-      print('Failed to record migration: $e');
+      ErrorUtils.logInfo('Failed to record migration: $e');
     }
   }
 
@@ -266,14 +269,14 @@ class MigrationManager {
     try {
       // This is a simplified rollback - in production, you would need
       // to implement proper rollback scripts for each version
-      print('Rollback to version $targetVersion requested');
-      print('Note: Full rollback not implemented in this simplified version');
+      ErrorUtils.logInfo('Rollback to version $targetVersion requested');
+      ErrorUtils.logInfo('Note: Full rollback not implemented in this simplified version');
       
       // For now, we'll just update the schema version
       await setCurrentSchemaVersion(db, targetVersion);
       return true;
     } catch (e) {
-      print('Rollback failed: $e');
+      ErrorUtils.logInfo('Rollback failed: $e');
       return false;
     }
   }
@@ -290,7 +293,7 @@ class MigrationManager {
       
       return false;
     } catch (e) {
-      print('Database integrity check failed: $e');
+      ErrorUtils.logInfo('Database integrity check failed: $e');
       return false;
     }
   }
@@ -301,7 +304,7 @@ class MigrationManager {
       await db.execute('VACUUM');
       await db.execute('ANALYZE');
     } catch (e) {
-      print('Database optimization failed: $e');
+      ErrorUtils.logInfo('Database optimization failed: $e');
     }
   }
 }

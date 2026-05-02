@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../utils/error_utils.dart';
 
 class EncryptionService {
   static const String _keyPrefix = 'encryption_key_';
@@ -91,7 +92,7 @@ class EncryptionService {
     } catch (e) {
       // If encryption fails, return the original text
       // In production, you might want to handle this differently
-      print('Encryption failed: $e');
+      ErrorUtils.logInfo('Encryption failed: $e');
       return text;
     }
   }
@@ -106,7 +107,7 @@ class EncryptionService {
     } catch (e) {
       // If decryption fails, return the encrypted text
       // In production, you might want to handle this differently
-      print('Decryption failed: $e');
+      ErrorUtils.logInfo('Decryption failed: $e');
       return encrypted;
     }
   }
@@ -179,7 +180,7 @@ class EncryptionService {
       
       return true;
     } catch (e) {
-      print('Key rotation failed: $e');
+      ErrorUtils.logInfo('Key rotation failed: $e');
       return false;
     }
   }
@@ -195,7 +196,7 @@ class EncryptionService {
         }
       }
     } catch (e) {
-      print('Failed to clear encryption keys: $e');
+      ErrorUtils.logInfo('Failed to clear encryption keys: $e');
     }
   }
 
@@ -212,7 +213,7 @@ class EncryptionService {
       
       return readValue == testValue;
     } catch (e) {
-      print('Encryption test failed: $e');
+      ErrorUtils.logInfo('Encryption test failed: $e');
       return false;
     }
   }

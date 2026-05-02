@@ -4,18 +4,26 @@ import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 import 'database_constants.dart';
 import '../../domain/entities/medicine.dart';
+import '../../core/services/database_encryption_service.dart';
 
 class MedicineDataSource {
   final DatabaseHelper _databaseHelper;
+  final DatabaseEncryptionService _encryptionService;
 
-  MedicineDataSource(this._databaseHelper);
+  MedicineDataSource(this._databaseHelper)
+      : _encryptionService = DatabaseEncryptionService();
 
   // Create a new medicine
   Future<String> createMedicine(Medicine medicine) async {
     final db = await _databaseHelper.database;
+    final medicineMap = medicine.toMap();
+    
+    // Encrypt sensitive fields before storage
+    final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
+    
     await db.insert(
       DatabaseConstants.tableMedicines,
-      medicine.toMap(),
+      encryptedMap,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     return medicine.id;
@@ -31,7 +39,12 @@ class MedicineDataSource {
     );
 
     if (maps.isNotEmpty) {
-      return Medicine.fromMap(maps.first);
+      final medicineMap = maps.first;
+      
+      // Decrypt sensitive fields after retrieval
+      final decryptedMap = await _encryptionService.decryptMedicine(medicineMap);
+      
+      return Medicine.fromMap(decryptedMap);
     }
     return null;
   }
@@ -55,7 +68,10 @@ class MedicineDataSource {
       orderBy: '${DatabaseConstants.columnMedicineName} ASC',
     );
 
-    return maps.map((map) => Medicine.fromMap(map)).toList();
+    // Decrypt sensitive fields for all medicines
+    final decryptedMaps = await _encryptionService.batchDecryptMedicines(maps);
+    
+    return decryptedMaps.map((map) => Medicine.fromMap(map)).toList();
   }
 
   // Get active medicines
@@ -88,15 +104,23 @@ class MedicineDataSource {
       orderBy: '${DatabaseConstants.columnMedicineStartDate} DESC',
     );
 
-    return maps.map((map) => Medicine.fromMap(map)).toList();
+    // Decrypt sensitive fields for all medicines
+    final decryptedMaps = await _encryptionService.batchDecryptMedicines(maps);
+    
+    return decryptedMaps.map((map) => Medicine.fromMap(map)).toList();
   }
 
   // Update medicine
   Future<int> updateMedicine(Medicine medicine) async {
     final db = await _databaseHelper.database;
+    final medicineMap = medicine.toMap();
+    
+    // Encrypt sensitive fields before storage
+    final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
+    
     return await db.update(
       DatabaseConstants.tableMedicines,
-      medicine.toMap(),
+      encryptedMap,
       where: '${DatabaseConstants.columnId} = ?',
       whereArgs: [medicine.id],
     );
@@ -128,7 +152,10 @@ class MedicineDataSource {
       orderBy: '${DatabaseConstants.columnMedicineName} ASC',
     );
 
-    return maps.map((map) => Medicine.fromMap(map)).toList();
+    // Decrypt sensitive fields for all medicines
+    final decryptedMaps = await _encryptionService.batchDecryptMedicines(maps);
+    
+    return decryptedMaps.map((map) => Medicine.fromMap(map)).toList();
   }
 
   // Get medicine count
@@ -182,9 +209,14 @@ class MedicineDataSource {
     final batch = db.batch();
     
     for (final medicine in medicines) {
+      final medicineMap = medicine.toMap();
+      
+      // Encrypt sensitive fields before storage
+      final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
+      
       batch.insert(
         DatabaseConstants.tableMedicines,
-        medicine.toMap(),
+        encryptedMap,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
@@ -198,9 +230,14 @@ class MedicineDataSource {
     final batch = db.batch();
     
     for (final medicine in medicines) {
+      final medicineMap = medicine.toMap();
+      
+      // Encrypt sensitive fields before storage
+      final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
+      
       batch.update(
         DatabaseConstants.tableMedicines,
-        medicine.toMap(),
+        encryptedMap,
         where: '${DatabaseConstants.columnId} = ?',
         whereArgs: [medicine.id],
       );

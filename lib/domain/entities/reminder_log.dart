@@ -5,7 +5,24 @@ enum ReminderStatus {
   skipped,
   missed,
   snoozed,
-  pending,
+  pending;
+
+  static ReminderStatus fromDbValue(int value) {
+    switch (value) {
+      case 0:
+        return ReminderStatus.taken;
+      case 1:
+        return ReminderStatus.skipped;
+      case 2:
+        return ReminderStatus.missed;
+      case 3:
+        return ReminderStatus.snoozed;
+      case 4:
+        return ReminderStatus.pending;
+      default:
+        return ReminderStatus.pending;
+    }
+  }
 }
 
 extension ReminderStatusExtension on ReminderStatus {
@@ -51,23 +68,6 @@ extension ReminderStatusExtension on ReminderStatus {
         return 3;
       case ReminderStatus.pending:
         return 4;
-    }
-  }
-
-  static ReminderStatus fromDbValue(int value) {
-    switch (value) {
-      case 0:
-        return ReminderStatus.taken;
-      case 1:
-        return ReminderStatus.skipped;
-      case 2:
-        return ReminderStatus.missed;
-      case 3:
-        return ReminderStatus.snoozed;
-      case 4:
-        return ReminderStatus.pending;
-      default:
-        return ReminderStatus.pending;
     }
   }
 }

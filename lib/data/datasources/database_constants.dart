@@ -24,6 +24,7 @@ class DatabaseConstants {
   static const String columnMedicineNotes = 'notes';
   static const String columnMedicineInstructions = 'instructions';
   static const String columnMedicineIsActive = 'is_active';
+  // Note: Medicine createdAt and updatedAt use the common columnCreatedAt and columnUpdatedAt
   
   // Prescriptions table columns
   static const String columnPrescriptionFilePath = 'file_path';

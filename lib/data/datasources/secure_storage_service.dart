@@ -1,10 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../core/utils/encryption_service.dart';
+import '../../core/utils/aes_encryption_service.dart';
+import '../../core/utils/error_utils.dart';
 
 class SecureStorageService {
   final FlutterSecureStorage _secureStorage;
-  final EncryptionService _encryptionService;
+  final AESEncryptionService _encryptionService;
   
   // Keys for different types of sensitive data
   static const String _userPreferencesKey = 'user_preferences';
@@ -16,7 +20,7 @@ class SecureStorageService {
 
   SecureStorageService()
       : _secureStorage = const FlutterSecureStorage(),
-        _encryptionService = EncryptionService(const FlutterSecureStorage());
+        _encryptionService = AESEncryptionService(const FlutterSecureStorage());
 
   // User preferences
   Future<void> saveUserPreference(String key, String value) async {
@@ -253,7 +257,7 @@ class SecureStorageService {
       
       return true;
     } catch (e) {
-      print('Failed to restore secure data: $e');
+      ErrorUtils.logInfo('Failed to restore secure data: $e');
       return false;
     }
   }
