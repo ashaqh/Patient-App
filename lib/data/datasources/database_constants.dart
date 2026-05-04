@@ -1,13 +1,15 @@
 class DatabaseConstants {
   // Database info
   static const String databaseName = 'carevault.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 3;
   
   // Table names
   static const String tableMedicines = 'medicines';
   static const String tablePrescriptions = 'prescriptions';
   static const String tableReminderLogs = 'reminder_logs';
   static const String tableFollowUps = 'follow_ups';
+  static const String tableVitalSigns = 'vital_signs';
+  static const String tableAuditLogs = 'audit_logs';
   
   // Common column names
   static const String columnId = 'id';
@@ -54,6 +56,37 @@ class DatabaseConstants {
   static const String columnFollowUpLocation = 'location';
   static const String columnFollowUpStatus = 'status';
   static const String columnFollowUpCompletedAt = 'completed_at';
+  
+  // Vital signs table columns
+  static const String columnVitalSignType = 'type';
+  static const String columnVitalSignValue1 = 'value1';
+  static const String columnVitalSignValue2 = 'value2';
+  static const String columnVitalSignUnit = 'unit';
+  static const String columnVitalSignReadingTime = 'reading_time';
+  static const String columnVitalSignMealMarker = 'meal_marker';
+  static const String columnVitalSignContext = 'context';
+  static const String columnVitalSignNotes = 'notes';
+  static const String columnVitalSignDeviceSource = 'device_source';
+  static const String columnVitalSignIsManualEntry = 'is_manual_entry';
+  
+  // Audit logs table columns
+  static const String columnAuditLogAction = 'action';
+  static const String columnAuditLogResourceType = 'resource_type';
+  static const String columnAuditLogResourceId = 'resource_id';
+  static const String columnAuditLogUserId = 'user_id';
+  static const String columnAuditLogUserRole = 'user_role';
+  static const String columnAuditLogIpAddress = 'ip_address';
+  static const String columnAuditLogDeviceId = 'device_id';
+  static const String columnAuditLogDeviceName = 'device_name';
+  static const String columnAuditLogLocation = 'location';
+  static const String columnAuditLogTimestamp = 'timestamp';
+  static const String columnAuditLogSuccess = 'success';
+  static const String columnAuditLogErrorMessage = 'error_message';
+  static const String columnAuditLogBeforeState = 'before_state';
+  static const String columnAuditLogAfterState = 'after_state';
+  static const String columnAuditLogDetails = 'details';
+  static const String columnAuditLogSeverity = 'severity';
+  static const String columnAuditLogSessionId = 'session_id';
   
   // Create table statements
   static String get createMedicinesTable => '''
@@ -119,6 +152,47 @@ class DatabaseConstants {
     )
   ''';
   
+  static String get createVitalSignsTable => '''
+    CREATE TABLE $tableVitalSigns (
+      $columnId TEXT PRIMARY KEY,
+      $columnVitalSignType TEXT NOT NULL,
+      $columnVitalSignValue1 REAL NOT NULL,
+      $columnVitalSignValue2 REAL,
+      $columnVitalSignUnit TEXT NOT NULL,
+      $columnVitalSignReadingTime TEXT NOT NULL,
+      $columnVitalSignMealMarker TEXT,
+      $columnVitalSignContext TEXT,
+      $columnVitalSignNotes TEXT,
+      $columnVitalSignDeviceSource TEXT,
+      $columnVitalSignIsManualEntry INTEGER NOT NULL DEFAULT 1,
+      $columnCreatedAt TEXT NOT NULL,
+      $columnUpdatedAt TEXT NOT NULL
+    )
+  ''';
+  
+  static String get createAuditLogsTable => '''
+    CREATE TABLE $tableAuditLogs (
+      $columnId TEXT PRIMARY KEY,
+      $columnAuditLogAction TEXT NOT NULL,
+      $columnAuditLogResourceType TEXT NOT NULL,
+      $columnAuditLogResourceId TEXT,
+      $columnAuditLogUserId TEXT NOT NULL,
+      $columnAuditLogUserRole TEXT NOT NULL,
+      $columnAuditLogIpAddress TEXT,
+      $columnAuditLogDeviceId TEXT,
+      $columnAuditLogDeviceName TEXT,
+      $columnAuditLogLocation TEXT,
+      $columnAuditLogTimestamp TEXT NOT NULL,
+      $columnAuditLogSuccess INTEGER NOT NULL,
+      $columnAuditLogErrorMessage TEXT,
+      $columnAuditLogBeforeState TEXT,
+      $columnAuditLogAfterState TEXT,
+      $columnAuditLogDetails TEXT,
+      $columnAuditLogSeverity TEXT NOT NULL,
+      $columnAuditLogSessionId TEXT NOT NULL
+    )
+  ''';
+  
   // Index statements
   static String get createMedicineTimesIndex => '''
     CREATE INDEX idx_medicine_times ON $tableMedicines($columnMedicineTimes)
@@ -148,9 +222,39 @@ class DatabaseConstants {
     CREATE INDEX idx_follow_up_status ON $tableFollowUps($columnFollowUpStatus)
   ''';
   
+  static String get createVitalSignTypeIndex => '''
+    CREATE INDEX idx_vital_sign_type ON $tableVitalSigns($columnVitalSignType)
+  ''';
+  
+  static String get createVitalSignReadingTimeIndex => '''
+    CREATE INDEX idx_vital_sign_reading_time ON $tableVitalSigns($columnVitalSignReadingTime)
+  ''';
+  
+  static String get createAuditLogTimestampIndex => '''
+    CREATE INDEX idx_audit_log_timestamp ON $tableAuditLogs($columnAuditLogTimestamp)
+  ''';
+  
+  static String get createAuditLogUserIdIndex => '''
+    CREATE INDEX idx_audit_log_user_id ON $tableAuditLogs($columnAuditLogUserId)
+  ''';
+  
+  static String get createAuditLogResourceTypeIndex => '''
+    CREATE INDEX idx_audit_log_resource_type ON $tableAuditLogs($columnAuditLogResourceType)
+  ''';
+  
+  static String get createAuditLogActionIndex => '''
+    CREATE INDEX idx_audit_log_action ON $tableAuditLogs($columnAuditLogAction)
+  ''';
+  
+  static String get createAuditLogSeverityIndex => '''
+    CREATE INDEX idx_audit_log_severity ON $tableAuditLogs($columnAuditLogSeverity)
+  ''';
+  
   // Drop table statements (for migrations)
   static String get dropMedicinesTable => 'DROP TABLE IF EXISTS $tableMedicines';
   static String get dropPrescriptionsTable => 'DROP TABLE IF EXISTS $tablePrescriptions';
   static String get dropReminderLogsTable => 'DROP TABLE IF EXISTS $tableReminderLogs';
   static String get dropFollowUpsTable => 'DROP TABLE IF EXISTS $tableFollowUps';
+  static String get dropVitalSignsTable => 'DROP TABLE IF EXISTS $tableVitalSigns';
+  static String get dropAuditLogsTable => 'DROP TABLE IF EXISTS $tableAuditLogs';
 }

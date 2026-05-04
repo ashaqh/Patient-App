@@ -118,6 +118,7 @@ class DatabaseHelper {
     await db.delete(DatabaseConstants.tablePrescriptions);
     await db.delete(DatabaseConstants.tableReminderLogs);
     await db.delete(DatabaseConstants.tableFollowUps);
+    await db.delete(DatabaseConstants.tableVitalSigns);
   }
 
   // Drop and recreate database (for testing)
@@ -154,11 +155,16 @@ class DatabaseHelper {
       await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tableFollowUps}')
     ) ?? 0;
     
+    final vitalSignsCount = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tableVitalSigns}')
+    ) ?? 0;
+    
     return {
       'medicines': medicinesCount,
       'prescriptions': prescriptionsCount,
       'reminder_logs': reminderLogsCount,
       'follow_ups': followUpsCount,
+      'vital_signs': vitalSignsCount,
     };
   }
 

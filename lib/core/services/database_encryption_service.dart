@@ -16,6 +16,17 @@ class DatabaseEncryptionService {
   static const String _followUpClinicInfoCategory = 'follow_up_clinic_info';
   static const String _followUpLocationCategory = 'follow_up_location';
   static const String _reminderLogNotesCategory = 'reminder_log_notes';
+  static const String _vitalSignNotesCategory = 'vital_sign_notes';
+  static const String _vitalSignContextCategory = 'vital_sign_context';
+  
+  // Audit log sensitive fields categories
+  static const String _auditLogErrorMessageCategory = 'audit_log_error_message';
+  static const String _auditLogBeforeStateCategory = 'audit_log_before_state';
+  static const String _auditLogAfterStateCategory = 'audit_log_after_state';
+  static const String _auditLogDetailsCategory = 'audit_log_details';
+  static const String _auditLogIpAddressCategory = 'audit_log_ip_address';
+  static const String _auditLogDeviceInfoCategory = 'audit_log_device_info';
+  static const String _auditLogLocationCategory = 'audit_log_location';
   
   DatabaseEncryptionService()
       : _encryptionService = AESEncryptionService(const FlutterSecureStorage());
@@ -455,6 +466,327 @@ class DatabaseEncryptionService {
     return _encryptionService.isEncrypted(value);
   }
   
+  // Encrypt vital sign sensitive fields
+  Future<Map<String, dynamic>> encryptVitalSign(Map<String, dynamic> vitalSignMap) async {
+    final encryptedMap = Map<String, dynamic>.from(vitalSignMap);
+    
+    // Encrypt notes if present
+    if (encryptedMap['notes'] != null && encryptedMap['notes'] is String) {
+      final notes = encryptedMap['notes'] as String;
+      if (notes.isNotEmpty) {
+        encryptedMap['notes'] = await _encryptionService.encryptText(
+          notes,
+          purpose: _vitalSignNotesCategory,
+        );
+      }
+    }
+    
+    // Encrypt context if present
+    if (encryptedMap['context'] != null && encryptedMap['context'] is String) {
+      final context = encryptedMap['context'] as String;
+      if (context.isNotEmpty) {
+        encryptedMap['context'] = await _encryptionService.encryptText(
+          context,
+          purpose: _vitalSignContextCategory,
+        );
+      }
+    }
+    
+    return encryptedMap;
+  }
+  
+  // Decrypt vital sign sensitive fields
+  Future<Map<String, dynamic>> decryptVitalSign(Map<String, dynamic> vitalSignMap) async {
+    final decryptedMap = Map<String, dynamic>.from(vitalSignMap);
+    
+    // Decrypt notes if present and appears encrypted
+    if (decryptedMap['notes'] != null && decryptedMap['notes'] is String) {
+      final notes = decryptedMap['notes'] as String;
+      if (notes.isNotEmpty && _encryptionService.isEncrypted(notes)) {
+        try {
+          decryptedMap['notes'] = await _encryptionService.decryptText(
+            notes,
+            purpose: _vitalSignNotesCategory,
+          );
+        } catch (e) {
+          // If decryption fails, leave as is (might be plaintext from before encryption)
+          ErrorUtils.logInfo('Failed to decrypt vital sign notes: $e');
+        }
+      }
+    }
+    
+    // Decrypt context if present and appears encrypted
+    if (decryptedMap['context'] != null && decryptedMap['context'] is String) {
+      final context = decryptedMap['context'] as String;
+      if (context.isNotEmpty && _encryptionService.isEncrypted(context)) {
+        try {
+          decryptedMap['context'] = await _encryptionService.decryptText(
+            context,
+            purpose: _vitalSignContextCategory,
+          );
+        } catch (e) {
+          // If decryption fails, leave as is (might be plaintext from before encryption)
+          ErrorUtils.logInfo('Failed to decrypt vital sign context: $e');
+        }
+      }
+    }
+    
+    return decryptedMap;
+  }
+  
+  // Batch encrypt vital signs
+  Future<List<Map<String, dynamic>>> batchEncryptVitalSigns(List<Map<String, dynamic>> vitalSignMaps) async {
+    final results = <Map<String, dynamic>>[];
+    
+    for (final vitalSignMap in vitalSignMaps) {
+      final encrypted = await encryptVitalSign(vitalSignMap);
+      results.add(encrypted);
+    }
+    
+    return results;
+  }
+  
+  // Batch decrypt vital signs
+  Future<List<Map<String, dynamic>>> batchDecryptVitalSigns(List<Map<String, dynamic>> vitalSignMaps) async {
+    final results = <Map<String, dynamic>>[];
+    
+    for (final vitalSignMap in vitalSignMaps) {
+      final decrypted = await decryptVitalSign(vitalSignMap);
+      results.add(decrypted);
+    }
+    
+    return results;
+  }
+  
+  // Encrypt audit log sensitive fields
+  Future<Map<String, dynamic>> encryptAuditLog(Map<String, dynamic> auditLogMap) async {
+    final encryptedMap = Map<String, dynamic>.from(auditLogMap);
+    
+    // Encrypt error message if present
+    if (encryptedMap['error_message'] != null && encryptedMap['error_message'] is String) {
+      final errorMessage = encryptedMap['error_message'] as String;
+      if (errorMessage.isNotEmpty) {
+        encryptedMap['error_message'] = await _encryptionService.encryptText(
+          errorMessage,
+          purpose: _auditLogErrorMessageCategory,
+        );
+      }
+    }
+    
+    // Encrypt before state if present
+    if (encryptedMap['before_state'] != null && encryptedMap['before_state'] is String) {
+      final beforeState = encryptedMap['before_state'] as String;
+      if (beforeState.isNotEmpty) {
+        encryptedMap['before_state'] = await _encryptionService.encryptText(
+          beforeState,
+          purpose: _auditLogBeforeStateCategory,
+        );
+      }
+    }
+    
+    // Encrypt after state if present
+    if (encryptedMap['after_state'] != null && encryptedMap['after_state'] is String) {
+      final afterState = encryptedMap['after_state'] as String;
+      if (afterState.isNotEmpty) {
+        encryptedMap['after_state'] = await _encryptionService.encryptText(
+          afterState,
+          purpose: _auditLogAfterStateCategory,
+        );
+      }
+    }
+    
+    // Encrypt details if present
+    if (encryptedMap['details'] != null && encryptedMap['details'] is String) {
+      final details = encryptedMap['details'] as String;
+      if (details.isNotEmpty) {
+        encryptedMap['details'] = await _encryptionService.encryptText(
+          details,
+          purpose: _auditLogDetailsCategory,
+        );
+      }
+    }
+    
+    // Encrypt IP address if present
+    if (encryptedMap['ip_address'] != null && encryptedMap['ip_address'] is String) {
+      final ipAddress = encryptedMap['ip_address'] as String;
+      if (ipAddress.isNotEmpty) {
+        encryptedMap['ip_address'] = await _encryptionService.encryptText(
+          ipAddress,
+          purpose: _auditLogIpAddressCategory,
+        );
+      }
+    }
+    
+    // Encrypt device info (combined device_id and device_name for efficiency)
+    final deviceId = encryptedMap['device_id'] as String?;
+    final deviceName = encryptedMap['device_name'] as String?;
+    if ((deviceId != null && deviceId.isNotEmpty) || (deviceName != null && deviceName.isNotEmpty)) {
+      final deviceInfo = '${deviceId ?? ''}|${deviceName ?? ''}';
+      if (deviceInfo.isNotEmpty && deviceInfo != '|') {
+        final encryptedDeviceInfo = await _encryptionService.encryptText(
+          deviceInfo,
+          purpose: _auditLogDeviceInfoCategory,
+        );
+        encryptedMap['device_id'] = deviceId != null && deviceId.isNotEmpty ? encryptedDeviceInfo : null;
+        encryptedMap['device_name'] = deviceName != null && deviceName.isNotEmpty ? encryptedDeviceInfo : null;
+      }
+    }
+    
+    // Encrypt location if present
+    if (encryptedMap['location'] != null && encryptedMap['location'] is String) {
+      final location = encryptedMap['location'] as String;
+      if (location.isNotEmpty) {
+        encryptedMap['location'] = await _encryptionService.encryptText(
+          location,
+          purpose: _auditLogLocationCategory,
+        );
+      }
+    }
+    
+    return encryptedMap;
+  }
+  
+  // Decrypt audit log sensitive fields
+  Future<Map<String, dynamic>> decryptAuditLog(Map<String, dynamic> auditLogMap) async {
+    final decryptedMap = Map<String, dynamic>.from(auditLogMap);
+    
+    // Decrypt error message if present and appears encrypted
+    if (decryptedMap['error_message'] != null && decryptedMap['error_message'] is String) {
+      final errorMessage = decryptedMap['error_message'] as String;
+      if (errorMessage.isNotEmpty && _encryptionService.isEncrypted(errorMessage)) {
+        try {
+          decryptedMap['error_message'] = await _encryptionService.decryptText(
+            errorMessage,
+            purpose: _auditLogErrorMessageCategory,
+          );
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log error message: $e');
+        }
+      }
+    }
+    
+    // Decrypt before state if present and appears encrypted
+    if (decryptedMap['before_state'] != null && decryptedMap['before_state'] is String) {
+      final beforeState = decryptedMap['before_state'] as String;
+      if (beforeState.isNotEmpty && _encryptionService.isEncrypted(beforeState)) {
+        try {
+          decryptedMap['before_state'] = await _encryptionService.decryptText(
+            beforeState,
+            purpose: _auditLogBeforeStateCategory,
+          );
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log before state: $e');
+        }
+      }
+    }
+    
+    // Decrypt after state if present and appears encrypted
+    if (decryptedMap['after_state'] != null && decryptedMap['after_state'] is String) {
+      final afterState = decryptedMap['after_state'] as String;
+      if (afterState.isNotEmpty && _encryptionService.isEncrypted(afterState)) {
+        try {
+          decryptedMap['after_state'] = await _encryptionService.decryptText(
+            afterState,
+            purpose: _auditLogAfterStateCategory,
+          );
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log after state: $e');
+        }
+      }
+    }
+    
+    // Decrypt details if present and appears encrypted
+    if (decryptedMap['details'] != null && decryptedMap['details'] is String) {
+      final details = decryptedMap['details'] as String;
+      if (details.isNotEmpty && _encryptionService.isEncrypted(details)) {
+        try {
+          decryptedMap['details'] = await _encryptionService.decryptText(
+            details,
+            purpose: _auditLogDetailsCategory,
+          );
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log details: $e');
+        }
+      }
+    }
+    
+    // Decrypt IP address if present and appears encrypted
+    if (decryptedMap['ip_address'] != null && decryptedMap['ip_address'] is String) {
+      final ipAddress = decryptedMap['ip_address'] as String;
+      if (ipAddress.isNotEmpty && _encryptionService.isEncrypted(ipAddress)) {
+        try {
+          decryptedMap['ip_address'] = await _encryptionService.decryptText(
+            ipAddress,
+            purpose: _auditLogIpAddressCategory,
+          );
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log IP address: $e');
+        }
+      }
+    }
+    
+    // Decrypt device info
+    if (decryptedMap['device_id'] != null && decryptedMap['device_id'] is String) {
+      final deviceInfo = decryptedMap['device_id'] as String;
+      if (deviceInfo.isNotEmpty && _encryptionService.isEncrypted(deviceInfo)) {
+        try {
+          final decryptedDeviceInfo = await _encryptionService.decryptText(
+            deviceInfo,
+            purpose: _auditLogDeviceInfoCategory,
+          );
+          final parts = decryptedDeviceInfo.split('|');
+          if (parts.length >= 2) {
+            decryptedMap['device_id'] = parts[0].isNotEmpty ? parts[0] : null;
+            decryptedMap['device_name'] = parts[1].isNotEmpty ? parts[1] : null;
+          }
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log device info: $e');
+        }
+      }
+    }
+    
+    // Decrypt location if present and appears encrypted
+    if (decryptedMap['location'] != null && decryptedMap['location'] is String) {
+      final location = decryptedMap['location'] as String;
+      if (location.isNotEmpty && _encryptionService.isEncrypted(location)) {
+        try {
+          decryptedMap['location'] = await _encryptionService.decryptText(
+            location,
+            purpose: _auditLogLocationCategory,
+          );
+        } catch (e) {
+          ErrorUtils.logInfo('Failed to decrypt audit log location: $e');
+        }
+      }
+    }
+    
+    return decryptedMap;
+  }
+  
+  // Batch encrypt audit logs
+  Future<List<Map<String, dynamic>>> batchEncryptAuditLogs(List<Map<String, dynamic>> auditLogMaps) async {
+    final results = <Map<String, dynamic>>[];
+    
+    for (final auditLogMap in auditLogMaps) {
+      final encrypted = await encryptAuditLog(auditLogMap);
+      results.add(encrypted);
+    }
+    
+    return results;
+  }
+  
+  // Batch decrypt audit logs
+  Future<List<Map<String, dynamic>>> batchDecryptAuditLogs(List<Map<String, dynamic>> auditLogMaps) async {
+    final results = <Map<String, dynamic>>[];
+    
+    for (final auditLogMap in auditLogMaps) {
+      final decrypted = await decryptAuditLog(auditLogMap);
+      results.add(decrypted);
+    }
+    
+    return results;
+  }
+  
   // Get list of encrypted fields for each entity type
   Map<String, List<String>> getEncryptedFieldsByEntity() {
     return {
@@ -462,6 +794,8 @@ class DatabaseEncryptionService {
       'prescription': ['notes', 'doctor_name', 'clinic_name'],
       'follow_up': ['notes', 'doctor_name', 'clinic_name', 'location'],
       'reminder_log': ['notes'],
+      'vital_sign': ['notes', 'context'],
+      'audit_log': ['error_message', 'before_state', 'after_state', 'details', 'ip_address', 'device_id', 'device_name', 'location'],
     };
   }
 }

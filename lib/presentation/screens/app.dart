@@ -3,14 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/notification_handler.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/constants/spacing_constants.dart';
 import '../../core/utils/error_utils.dart';
 import '../providers/reminder_provider.dart';
 import '../providers/app_lock_provider.dart';
-import 'dashboard_screen.dart';
-import 'medicine_list_screen.dart';
-import 'prescription_list_screen.dart';
-import 'follow_up_list_screen.dart';
+import 'dashboard_screen_new.dart';
+import 'medicine_list_screen_new.dart';
+import 'prescription_list_screen_new.dart';
+import 'follow_up_list_screen_new.dart';
 import 'timeline_screen.dart';
+import 'vital_sign_list_screen.dart';
 import 'app_lock_screen.dart';
 
 class App extends ConsumerWidget {
@@ -47,11 +49,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   bool _isCheckingLock = true;
 
   static final List<Widget> _widgetOptions = <Widget>[
-    const DashboardScreen(),
-    const MedicineListScreen(),
-    const PrescriptionListScreen(),
-    const FollowUpListScreen(),
+    const DashboardScreenNew(),
+    const MedicineListScreenNew(),
+    const PrescriptionListScreenNew(),
+    const FollowUpListScreenNew(),
     const TimelineScreen(),
+    const VitalSignListScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -115,6 +118,48 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     }
   }
 
+  Widget _buildNavItem(
+    BuildContext context, {
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final isActive = _selectedIndex == index;
+    
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onItemTapped(index),
+          splashColor: AppTheme.primaryColor.withOpacity(0.1),
+          highlightColor: AppTheme.primaryColor.withOpacity(0.05),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isActive ? activeIcon : icon,
+                  color: isActive ? AppTheme.primaryColor : AppTheme.neutralColor,
+                  size: 24,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: isActive ? AppTheme.primaryColor : AppTheme.neutralColor,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appLockState = ref.watch(appLockNotifierProvider);
@@ -154,155 +199,67 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      bottomNavigationBar: Container(
-        height: 96,
-        color: Colors.white,
+bottomNavigationBar: Container(
+        height: 80 + MediaQuery.of(context).viewPadding.bottom,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          border: Border(
+            top: BorderSide(
+              width: 1,
+              color: AppTheme.outlineVariant,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
         child: Row(
           children: [
-            // Home button - selected
-            Expanded(
-              child: InkWell(
-                onTap: () => _onItemTapped(0),
-                child: Container(
-                  color: _selectedIndex == 0 ? AppTheme.primaryColor : Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.home,
-                        color: _selectedIndex == 0 ? Colors.white : AppTheme.primaryColor,
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Home',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: _selectedIndex == 0 ? Colors.white : AppTheme.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            _buildNavItem(
+              context,
+              index: 0,
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home,
+              label: 'Home',
             ),
-            // Medicines button
-            Expanded(
-              child: InkWell(
-                onTap: () => _onItemTapped(1),
-                child: Container(
-                  color: Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.medication,
-                        color: _selectedIndex == 1 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Meds',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: _selectedIndex == 1 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            _buildNavItem(
+              context,
+              index: 1,
+              icon: Icons.medication_outlined,
+              activeIcon: Icons.medication,
+              label: 'Meds',
             ),
-            // Prescriptions button
-            Expanded(
-              child: InkWell(
-                onTap: () => _onItemTapped(2),
-                child: Container(
-                  color: Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.description,
-                        color: _selectedIndex == 2 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Vault',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: _selectedIndex == 2 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            _buildNavItem(
+              context,
+              index: 2,
+              icon: Icons.description_outlined,
+              activeIcon: Icons.description,
+              label: 'Vault',
             ),
-            // Follow-ups button
-            Expanded(
-              child: InkWell(
-                onTap: () => _onItemTapped(3),
-                child: Container(
-                  color: Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        color: _selectedIndex == 3 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Follow-ups',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: _selectedIndex == 3 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            _buildNavItem(
+              context,
+              index: 3,
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today,
+              label: 'Follow-ups',
             ),
-            // Timeline button
-            Expanded(
-              child: InkWell(
-                onTap: () => _onItemTapped(4),
-                child: Container(
-                  color: Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.history,
-                        color: _selectedIndex == 4 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Timeline',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: _selectedIndex == 4 ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            _buildNavItem(
+              context,
+              index: 4,
+              icon: Icons.history_outlined,
+              activeIcon: Icons.history,
+              label: 'Timeline',
+            ),
+            _buildNavItem(
+              context,
+              index: 5,
+              icon: Icons.monitor_heart_outlined,
+              activeIcon: Icons.monitor_heart,
+              label: 'Vitals',
             ),
           ],
         ),

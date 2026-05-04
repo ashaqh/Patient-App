@@ -29,39 +29,26 @@ class MigrationManager {
     ];
   }
 
-  // Get migration scripts for version 2 (example future version)
+  // Get migration scripts for version 2 (vital signs feature)
   static List<String> _getVersion2Migrations() {
     return [
-      // Example: Add new column to medicines table
-      '''
-      ALTER TABLE ${DatabaseConstants.tableMedicines} 
-      ADD COLUMN new_column TEXT
-      ''',
-      
-      // Example: Create new table
-      '''
-      CREATE TABLE IF NOT EXISTS new_table (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-      ''',
+      // Create vital signs table
+      DatabaseConstants.createVitalSignsTable,
+      DatabaseConstants.createVitalSignTypeIndex,
+      DatabaseConstants.createVitalSignReadingTimeIndex,
     ];
   }
 
-  // Get migration scripts for version 3 (example future version)
+  // Get migration scripts for version 3 (audit logging feature)
   static List<String> _getVersion3Migrations() {
     return [
-      // Example: Add index to new column
-      '''
-      CREATE INDEX IF NOT EXISTS idx_new_column 
-      ON ${DatabaseConstants.tableMedicines}(new_column)
-      ''',
-      
-      // Example: Drop old table if exists
-      '''
-      DROP TABLE IF EXISTS old_table
-      ''',
+      // Create audit logs table
+      DatabaseConstants.createAuditLogsTable,
+      DatabaseConstants.createAuditLogTimestampIndex,
+      DatabaseConstants.createAuditLogUserIdIndex,
+      DatabaseConstants.createAuditLogResourceTypeIndex,
+      DatabaseConstants.createAuditLogActionIndex,
+      DatabaseConstants.createAuditLogSeverityIndex,
     ];
   }
 
@@ -179,6 +166,7 @@ class MigrationManager {
         DatabaseConstants.tablePrescriptions,
         DatabaseConstants.tableReminderLogs,
         DatabaseConstants.tableFollowUps,
+        if (expectedVersion >= 2) DatabaseConstants.tableVitalSigns,
       ];
       
       for (final table in requiredTables) {

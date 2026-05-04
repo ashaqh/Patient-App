@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entities/follow_up.dart';
 import '../providers/follow_up_provider.dart';
-import 'add_follow_up_screen.dart';
+import 'add_follow_up_screen_new.dart';
 
 class FollowUpListScreen extends ConsumerWidget {
   const FollowUpListScreen({super.key});
@@ -51,7 +51,7 @@ class FollowUpListScreen extends ConsumerWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddFollowUpScreen(),
+              builder: (context) => const AddFollowUpScreenNew(),
             ),
           );
         },

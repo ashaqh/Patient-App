@@ -7,6 +7,13 @@ import '../../data/repositories/medicine_repository_impl.dart';
 import '../../domain/entities/medicine.dart';
 import '../../domain/repositories/medicine_repository.dart';
 
+// Medicine filter enum
+enum MedicineFilter {
+  all,
+  active,
+  inactive,
+}
+
 // Database helper provider
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
   return DatabaseHelper();
@@ -29,22 +36,30 @@ class MedicineListState {
   final List<Medicine> medicines;
   final bool isLoading;
   final String? error;
+  final MedicineFilter filter;
+  final String searchQuery;
 
   const MedicineListState({
     this.medicines = const [],
     this.isLoading = false,
     this.error,
+    this.filter = MedicineFilter.all,
+    this.searchQuery = '',
   });
 
   MedicineListState copyWith({
     List<Medicine>? medicines,
     bool? isLoading,
     String? error,
+    MedicineFilter? filter,
+    String? searchQuery,
   }) {
     return MedicineListState(
       medicines: medicines ?? this.medicines,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      filter: filter ?? this.filter,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 
@@ -56,12 +71,18 @@ class MedicineListState {
         other.medicines.length == medicines.length &&
         other.medicines.every((medicine) => medicines.contains(medicine)) &&
         other.isLoading == isLoading &&
-        other.error == error;
+        other.error == error &&
+        other.filter == filter &&
+        other.searchQuery == searchQuery;
   }
 
   @override
   int get hashCode {
-    return medicines.hashCode ^ isLoading.hashCode ^ error.hashCode;
+    return medicines.hashCode ^ 
+           isLoading.hashCode ^ 
+           error.hashCode ^ 
+           filter.hashCode ^ 
+           searchQuery.hashCode;
   }
 }
 
@@ -215,6 +236,47 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
   // Clear error
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  // Set filter
+  void setFilter(MedicineFilter filter) {
+    state = state.copyWith(filter: filter);
+  }
+
+  // Search medicines
+  void search(String query) {
+    state = state.copyWith(searchQuery: query);
+  }
+
+  // Toggle medicine active status (alias for toggleMedicineStatus)
+  Future<void> toggleMedicineActive(String id) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      
+      // Get current medicine to check current status
+      final medicine = await _medicineRepository.getMedicineById(id);
+      if (medicine == null) {
+        throw Exception('Medicine not found');
+      }
+      
+      final newActiveStatus = !medicine.isActive;
+      await _medicineRepository.toggleMedicineStatus(id, newActiveStatus);
+      
+      // Update reminders based on new active status
+      if (medicine.isActive && !newActiveStatus) {
+        // Medicine was deactivated, cancel reminders
+        await _reminderScheduler.notificationService.cancelMedicineReminders(id);
+      } else if (!medicine.isActive && newActiveStatus) {
+        // Medicine was activated, schedule reminders
+        final updatedMedicine = medicine.copyWith(isActive: newActiveStatus);
+        await _reminderScheduler.scheduleMedicineReminders(updatedMedicine);
+      }
+      
+      await _loadMedicines(); // Reload the list
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      rethrow;
+    }
   }
 }
 

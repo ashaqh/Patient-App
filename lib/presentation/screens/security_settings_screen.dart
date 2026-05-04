@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_lock_provider.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../../core/services/app_lock_service.dart';
+import '../../core/themes/app_theme.dart';
+import '../../core/constants/spacing_constants.dart';
 
 class SecuritySettingsScreen extends ConsumerStatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -54,78 +56,87 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final notifier = ref.read(appLockNotifierProvider.notifier);
     
     return Scaffold(
+      backgroundColor: AppTheme.secondaryColor,
       appBar: AppBar(
         title: const Text('Security Settings'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: AppTheme.onPrimaryColor,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Loading state
-            if (appLockState.isLoading)
-              const Center(child: CircularProgressIndicator()),
-            
-            // Error message
-            if (appLockState.error != null)
-              Container(
-                padding: const EdgeInsets.all(12.0),
-                margin: const EdgeInsets.only(bottom: 16.0),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8.0),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red),
-                    const SizedBox(width: 12.0),
-                    Expanded(
-                      child: Text(
-                        appLockState.error!,
-                        style: TextStyle(color: Colors.red.shade800),
-                      ),
+      body: CustomScrollView(
+        slivers: [
+          // Main Content
+          SliverPadding(
+            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Loading state
+                if (appLockState.isLoading)
+                  const Center(child: CircularProgressIndicator()),
+                
+                // Error message
+                if (appLockState.error != null)
+                  Container(
+                    padding: const EdgeInsets.all(16.0),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.l),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorContainer,
+                      borderRadius: BorderRadius.circular(16.0),
+                      border: Border.all(color: AppTheme.errorColor),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      color: Colors.red,
-                      onPressed: () => notifier.clearError(),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: AppTheme.errorColor),
+                        const SizedBox(width: 12.0),
+                        Expanded(
+                          child: Text(
+                            appLockState.error!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.errorColor,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: AppTheme.errorColor),
+                          onPressed: () => notifier.clearError(),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            
-            // App Lock Section
-            _buildAppLockSection(appLockState, notifier),
-            
-            const SizedBox(height: 24.0),
-            
-            // Encryption Status Section
-            _buildEncryptionSection(appLockState),
-            
-            const SizedBox(height: 24.0),
-            
-            // Timeout Settings Section
-            _buildTimeoutSection(appLockState, notifier),
-            
-            const SizedBox(height: 24.0),
-            
-            // Biometric Settings Section
-            _buildBiometricSection(appLockState, notifier),
-            
-            const SizedBox(height: 24.0),
-            
-            // Reset Section
-            _buildResetSection(notifier),
-            
-            const SizedBox(height: 32.0),
-            
-            // Security Tips
-            _buildSecurityTips(),
-          ],
-        ),
+                  ),
+                
+                // App Lock Section
+                _buildAppLockSection(appLockState, notifier),
+                
+                const SizedBox(height: AppSpacing.l),
+                
+                // Encryption Status Section
+                _buildEncryptionSection(appLockState),
+                
+                const SizedBox(height: AppSpacing.l),
+                
+                // Timeout Settings Section
+                _buildTimeoutSection(appLockState, notifier),
+                
+                const SizedBox(height: AppSpacing.l),
+                
+                // Biometric Settings Section
+                _buildBiometricSection(appLockState, notifier),
+                
+                const SizedBox(height: AppSpacing.l),
+                
+                // Reset Section
+                _buildResetSection(notifier),
+                
+                const SizedBox(height: AppSpacing.l),
+                
+                // Security Tips
+                _buildSecurityTips(),
+                
+                const SizedBox(height: AppSpacing.xxl),
+              ]),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -137,19 +148,29 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final hasPassword = state.settings?['has_password'] == true;
     
     return Card(
-      elevation: 4.0,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+        side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.lock, size: 24.0),
-                const SizedBox(width: 12.0),
-                const Text(
+                Icon(
+                  Icons.lock,
+                  size: AppSpacing.iconSizeMedium,
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(
                   'App Lock',
-                  style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
                 const Spacer(),
                 Switch(
@@ -161,26 +182,47 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                       _showDisableLockDialog(notifier);
                     }
                   },
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
+                  activeThumbColor: AppTheme.primaryColor,
+                  activeTrackColor: AppTheme.primaryColor.withAlpha((0.5 * 255).round()),
                 ),
               ],
             ),
             
-            const SizedBox(height: 12.0),
+            const SizedBox(height: AppSpacing.m),
             
             if (isLockEnabled)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Current lock type: ${_getLockTypeDisplayName(lockType)}',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      color: Theme.of(context).colorScheme.secondary,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: AppSpacing.iconSizeSmall,
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: AppSpacing.s),
+                        Text(
+                          'Current lock type: ${_getLockTypeDisplayName(lockType)}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   
-                  const SizedBox(height: 16.0),
+                  const SizedBox(height: AppSpacing.l),
                   
                   if (lockType == AppLockService.lockTypePIN && hasPIN)
                     _buildChangePINSection(notifier),
@@ -193,9 +235,30 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                 ],
               )
             else
-              const Text(
-                'App lock is disabled. Enable it to secure your medical data.',
-                style: TextStyle(color: Colors.grey),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondaryColor,
+                  borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: AppSpacing.iconSizeSmall,
+                      color: AppTheme.neutralColor,
+                    ),
+                    const SizedBox(width: AppSpacing.m),
+                    Expanded(
+                      child: Text(
+                        'App lock is disabled. Enable it to secure your medical data.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.neutralColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
@@ -208,48 +271,129 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final algorithm = state.settings?['algorithm'] ?? 'AES-256-CBC';
     
     return Card(
-      elevation: 4.0,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+        side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.enhanced_encryption, size: 24.0),
-                const SizedBox(width: 12.0),
-                const Text(
+                Icon(
+                  Icons.enhanced_encryption,
+                  size: AppSpacing.iconSizeMedium,
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(
                   'Encryption',
-                  style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
               ],
             ),
             
-            const SizedBox(height: 12.0),
+            const SizedBox(height: AppSpacing.m),
             
-            ListTile(
-              leading: Icon(
-                encryptionStatus ? Icons.check_circle : Icons.error,
-                color: encryptionStatus ? Colors.green : Colors.orange,
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
               ),
-              title: const Text('Data Encryption'),
-              subtitle: Text(
-                encryptionStatus 
-                  ? 'Your data is encrypted using $algorithm'
-                  : 'Encryption may not be fully available on this device',
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      encryptionStatus ? Icons.check_circle : Icons.error_outline,
+                      color: encryptionStatus ? AppTheme.primaryColor : AppTheme.errorColor,
+                      size: AppSpacing.iconSizeMedium,
+                    ),
+                    title: Text(
+                      'Data Encryption',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    subtitle: Text(
+                      encryptionStatus 
+                        ? 'Your data is encrypted using $algorithm'
+                        : 'Encryption may not be fully available on this device',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.neutralColor,
+                      ),
+                    ),
+                  ),
+                  
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                  
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.storage,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeMedium,
+                    ),
+                    title: Text(
+                      'Secure Storage',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Sensitive data is stored in encrypted format',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.neutralColor,
+                      ),
+                    ),
+                  ),
+                  
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                  
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.vpn_key,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeMedium,
+                    ),
+                    title: Text(
+                      'Encryption Keys',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Keys are securely stored in device keychain',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.neutralColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            
-            ListTile(
-              leading: const Icon(Icons.storage),
-              title: const Text('Secure Storage'),
-              subtitle: const Text('Sensitive data is stored in encrypted format'),
-            ),
-            
-            ListTile(
-              leading: const Icon(Icons.vpn_key),
-              title: const Text('Encryption Keys'),
-              subtitle: const Text('Keys are securely stored in device keychain'),
             ),
           ],
         ),
@@ -262,59 +406,129 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final timeoutOptions = AppLockService.timeoutOptions;
     
     return Card(
-      elevation: 4.0,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+        side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.timer, size: 24.0),
-                const SizedBox(width: 12.0),
-                const Text(
+                Icon(
+                  Icons.timer,
+                  size: AppSpacing.iconSizeMedium,
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(
                   'Auto-Lock Timeout',
-                  style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
               ],
             ),
             
-            const SizedBox(height: 12.0),
-            
-            const Text(
-              'Set how long the app stays unlocked after you close it:',
-              style: TextStyle(color: Colors.grey),
-            ),
-            
-            const SizedBox(height: 16.0),
-            
-            DropdownButtonFormField<String>(
-              value: _getTimeoutKeyFromValue(currentTimeout),
-              decoration: const InputDecoration(
-                labelText: 'Lock after',
-                border: OutlineInputBorder(),
-              ),
-              items: timeoutOptions.entries.map((entry) {
-                return DropdownMenuItem<String>(
-                  value: entry.key,
-                  child: Text(notifier.getTimeoutDisplayName(entry.value)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  notifier.setTimeout(timeoutOptions[value]!);
-                }
-              },
-            ),
-            
-            const SizedBox(height: 8.0),
+            const SizedBox(height: AppSpacing.m),
             
             Text(
-              'Current setting: ${notifier.getTimeoutDisplayName(currentTimeout)}',
-              style: TextStyle(
-                fontSize: 14.0,
-                color: Theme.of(context).colorScheme.secondary,
-                fontStyle: FontStyle.italic,
+              'Set how long the app stays unlocked after you close it:',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.neutralColor,
+              ),
+            ),
+            
+            const SizedBox(height: AppSpacing.l),
+            
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: _getTimeoutKeyFromValue(currentTimeout),
+                    decoration: InputDecoration(
+                      labelText: 'Lock after',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        borderSide: const BorderSide(width: 2, color: AppTheme.outlineColor),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        borderSide: const BorderSide(width: 2, color: AppTheme.outlineColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        borderSide: const BorderSide(width: 2, color: AppTheme.primaryColor),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                        vertical: AppSpacing.l,
+                      ),
+                      labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.neutralColor,
+                      ),
+                    ),
+                    items: timeoutOptions.entries.map((entry) {
+                      return DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(
+                          notifier.getTimeoutDisplayName(entry.value),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.onSurfaceColor,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        notifier.setTimeout(timeoutOptions[value]!);
+                      }
+                    },
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.onSurfaceColor,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: AppSpacing.m),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: AppSpacing.iconSizeSmall,
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: AppSpacing.m),
+                        Expanded(
+                          child: Text(
+                            'Current setting: ${notifier.getTimeoutDisplayName(currentTimeout)}',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -330,79 +544,156 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final availableBiometrics = biometricStatus['available_biometrics'] ?? [];
     
     return Card(
-      elevation: 4.0,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+        side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.fingerprint, size: 24.0),
-                const SizedBox(width: 12.0),
-                const Text(
+                Icon(
+                  Icons.fingerprint,
+                  size: AppSpacing.iconSizeMedium,
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(
                   'Biometric Authentication',
-                  style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
               ],
             ),
             
-            const SizedBox(height: 12.0),
+            const SizedBox(height: AppSpacing.m),
             
             if (!hasBiometric)
-              const ListTile(
-                leading: Icon(Icons.error_outline, color: Colors.orange),
-                title: Text('Biometric Not Available'),
-                subtitle: Text('Your device does not support biometric authentication'),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                decoration: BoxDecoration(
+                  color: AppTheme.errorContainer,
+                  borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                  border: Border.all(width: 1, color: AppTheme.errorColor),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: AppSpacing.iconSizeMedium,
+                      color: AppTheme.errorColor,
+                    ),
+                    const SizedBox(width: AppSpacing.m),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Biometric Not Available',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppTheme.errorColor,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Your device does not support biometric authentication',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.neutralColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               )
             else
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListTile(
-                    leading: Icon(
-                      biometricEnabled ? Icons.check_circle : Icons.circle_outlined,
-                      color: biometricEnabled ? Colors.green : Colors.grey,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondaryColor,
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
                     ),
-                    title: const Text('Enable Biometric Authentication'),
-                    subtitle: Text(
-                      availableBiometrics.isNotEmpty
-                        ? 'Available: ${availableBiometrics.join(', ')}'
-                        : 'No biometric methods available',
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.m,
+                            vertical: AppSpacing.s,
+                          ),
+                          leading: Icon(
+                            biometricEnabled ? Icons.check_circle : Icons.circle_outlined,
+                            color: biometricEnabled ? AppTheme.primaryColor : AppTheme.neutralColor,
+                            size: AppSpacing.iconSizeMedium,
+                          ),
+                          title: Text(
+                            'Enable Biometric Authentication',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppTheme.onSurfaceColor,
+                            ),
+                          ),
+                          subtitle: Text(
+                            availableBiometrics.isNotEmpty
+                              ? 'Available: ${availableBiometrics.join(', ')}'
+                              : 'No biometric methods available',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.neutralColor,
+                            ),
+                          ),
+                          trailing: Switch(
+                            value: biometricEnabled,
+                            onChanged: (value) {
+                              if (value) {
+                                _enableBiometric(notifier);
+                              } else {
+                                _disableBiometric(notifier);
+                              }
+                            },
+                            activeThumbColor: AppTheme.primaryColor,
+activeTrackColor: AppTheme.primaryColor.withAlpha((0.5 * 255).round()),
+                          ),
+                        ),
+                        
+                        if (biometricEnabled)
+                          Padding(
+                            padding: const EdgeInsets.all(AppSpacing.m),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.m),
+decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
                     ),
-                    trailing: Switch(
-                      value: biometricEnabled,
-                      onChanged: (value) {
-                        if (value) {
-                          _enableBiometric(notifier);
-                        } else {
-                          _disableBiometric(notifier);
-                        }
-                      },
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                                  child: Text(
+                                    'Biometric authentication will be used as the primary unlock method.',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.m),
+                                ElderlyFriendlyButton(
+                                  onPressed: () => _testBiometric(notifier),
+                                  text: 'Test Biometric Authentication',
+                                  icon: Icons.fingerprint,
+                                  backgroundColor: AppTheme.primaryColor,
+                                  textColor: AppTheme.onPrimaryColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  
-                  if (biometricEnabled)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8.0),
-                          const Text(
-                            'Biometric authentication will be used as the primary unlock method.',
-                            style: TextStyle(fontSize: 14.0, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8.0),
-                          ElderlyFriendlyButton(
-                            onPressed: () => _testBiometric(notifier),
-                            text: 'Test Biometric Authentication',
-                            icon: Icons.fingerprint,
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
           ],
@@ -418,16 +709,46 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8.0),
-        Text(
-          'Biometric authentication is enabled.',
-          style: TextStyle(color: Colors.green.shade700),
-        ),
-        if (availableBiometrics.isNotEmpty)
-          Text(
-            'Available methods: ${availableBiometrics.join(', ')}',
-            style: const TextStyle(fontSize: 14.0, color: Colors.grey),
+        const SizedBox(height: AppSpacing.m),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withAlpha((0.1 * 255).round()),
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+            border: Border.all(width: 1, color: AppTheme.primaryColor),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: AppTheme.primaryColor,
+                    size: AppSpacing.iconSizeSmall,
+                  ),
+                  const SizedBox(width: AppSpacing.m),
+                  Text(
+                    'Biometric authentication is enabled.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              if (availableBiometrics.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  'Available methods: ${availableBiometrics.join(', ')}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.neutralColor,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -436,77 +757,119 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16.0),
-        const Text(
+        const SizedBox(height: AppSpacing.l),
+        Text(
           'Change PIN',
-          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8.0),
-        
-        TextFormField(
-          controller: _oldPinController,
-          obscureText: !_showOldPin,
-          decoration: InputDecoration(
-            labelText: 'Current PIN',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(_showOldPin ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showOldPin = !_showOldPin;
-                });
-              },
-            ),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: AppTheme.onSurfaceColor,
           ),
-          keyboardType: TextInputType.number,
         ),
+        const SizedBox(height: AppSpacing.m),
         
-        const SizedBox(height: 12.0),
-        
-        TextFormField(
-          controller: _pinController,
-          obscureText: !_showPin,
-          decoration: InputDecoration(
-            labelText: 'New PIN (4-6 digits)',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(_showPin ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showPin = !_showPin;
-                });
-              },
-            ),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          decoration: BoxDecoration(
+            color: AppTheme.secondaryColor,
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
           ),
-          keyboardType: TextInputType.number,
-        ),
-        
-        const SizedBox(height: 12.0),
-        
-        TextFormField(
-          controller: _confirmPinController,
-          obscureText: !_showConfirmPin,
-          decoration: InputDecoration(
-            labelText: 'Confirm New PIN',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(_showConfirmPin ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showConfirmPin = !_showConfirmPin;
-                });
-              },
-            ),
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _oldPinController,
+                obscureText: !_showOldPin,
+                decoration: InputDecoration(
+                  labelText: 'Current PIN',
+                  prefixIcon: Icon(Icons.pin, color: AppTheme.neutralColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showOldPin ? Icons.visibility_off : Icons.visibility,
+                      color: AppTheme.neutralColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showOldPin = !_showOldPin;
+                      });
+                    },
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceColor,
+                ),
+              ),
+              
+              const SizedBox(height: AppSpacing.m),
+              
+              TextFormField(
+                controller: _pinController,
+                obscureText: !_showPin,
+                decoration: InputDecoration(
+                  labelText: 'New PIN (4-6 digits)',
+                  prefixIcon: Icon(Icons.pin_outlined, color: AppTheme.neutralColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showPin ? Icons.visibility_off : Icons.visibility,
+                      color: AppTheme.neutralColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showPin = !_showPin;
+                      });
+                    },
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceColor,
+                ),
+              ),
+              
+              const SizedBox(height: AppSpacing.m),
+              
+              TextFormField(
+                controller: _confirmPinController,
+                obscureText: !_showConfirmPin,
+                decoration: InputDecoration(
+                  labelText: 'Confirm New PIN',
+                  prefixIcon: Icon(Icons.pin, color: AppTheme.neutralColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showConfirmPin ? Icons.visibility_off : Icons.visibility,
+                      color: AppTheme.neutralColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showConfirmPin = !_showConfirmPin;
+                      });
+                    },
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceColor,
+                ),
+              ),
+            ],
           ),
-          keyboardType: TextInputType.number,
         ),
         
-        const SizedBox(height: 16.0),
+        const SizedBox(height: AppSpacing.l),
         
         ElderlyFriendlyButton(
           onPressed: () => _changePIN(notifier),
           text: 'Change PIN',
           icon: Icons.lock_reset,
+          backgroundColor: AppTheme.primaryColor,
+          textColor: AppTheme.onPrimaryColor,
         ),
       ],
     );
@@ -516,74 +879,116 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16.0),
-        const Text(
+        const SizedBox(height: AppSpacing.l),
+        Text(
           'Change Password',
-          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: AppTheme.onSurfaceColor,
+          ),
         ),
-        const SizedBox(height: 8.0),
+        const SizedBox(height: AppSpacing.m),
         
-        TextFormField(
-          controller: _oldPasswordController,
-          obscureText: !_showOldPassword,
-          decoration: InputDecoration(
-            labelText: 'Current Password',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(_showOldPassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showOldPassword = !_showOldPassword;
-                });
-              },
-            ),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          decoration: BoxDecoration(
+            color: AppTheme.secondaryColor,
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+          ),
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _oldPasswordController,
+                obscureText: !_showOldPassword,
+                decoration: InputDecoration(
+                  labelText: 'Current Password',
+                  prefixIcon: Icon(Icons.password, color: AppTheme.neutralColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showOldPassword ? Icons.visibility_off : Icons.visibility,
+                      color: AppTheme.neutralColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showOldPassword = !_showOldPassword;
+                      });
+                    },
+                  ),
+                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceColor,
+                ),
+              ),
+              
+              const SizedBox(height: AppSpacing.m),
+              
+              TextFormField(
+                controller: _passwordController,
+                obscureText: !_showPassword,
+                decoration: InputDecoration(
+                  labelText: 'New Password (min. 6 characters)',
+                  prefixIcon: Icon(Icons.lock_outline, color: AppTheme.neutralColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showPassword ? Icons.visibility_off : Icons.visibility,
+                      color: AppTheme.neutralColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showPassword = !_showPassword;
+                      });
+                    },
+                  ),
+                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceColor,
+                ),
+              ),
+              
+              const SizedBox(height: AppSpacing.m),
+              
+              TextFormField(
+                controller: _confirmPasswordController,
+                obscureText: !_showConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: 'Confirm New Password',
+                  prefixIcon: Icon(Icons.lock, color: AppTheme.neutralColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      color: AppTheme.neutralColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showConfirmPassword = !_showConfirmPassword;
+                      });
+                    },
+                  ),
+                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceColor,
+                ),
+              ),
+            ],
           ),
         ),
         
-        const SizedBox(height: 12.0),
-        
-        TextFormField(
-          controller: _passwordController,
-          obscureText: !_showPassword,
-          decoration: InputDecoration(
-            labelText: 'New Password (min. 6 characters)',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 12.0),
-        
-        TextFormField(
-          controller: _confirmPasswordController,
-          obscureText: !_showConfirmPassword,
-          decoration: InputDecoration(
-            labelText: 'Confirm New Password',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(_showConfirmPassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showConfirmPassword = !_showConfirmPassword;
-                });
-              },
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 16.0),
+        const SizedBox(height: AppSpacing.l),
         
         ElderlyFriendlyButton(
           onPressed: () => _changePassword(notifier),
           text: 'Change Password',
           icon: Icons.lock_reset,
+          backgroundColor: AppTheme.primaryColor,
+          textColor: AppTheme.onPrimaryColor,
         ),
       ],
     );
@@ -591,42 +996,50 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   
   Widget _buildResetSection(AppLockNotifier notifier) {
     return Card(
-      elevation: 4.0,
-      color: Colors.red.shade50,
+      elevation: 2,
+      color: AppTheme.errorContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+        side: const BorderSide(width: 2, color: AppTheme.errorColor),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.warning, size: 24.0, color: Colors.red),
-                const SizedBox(width: 12.0),
-                const Text(
+                Icon(
+                  Icons.warning,
+                  size: AppSpacing.iconSizeMedium,
+                  color: AppTheme.errorColor,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(
                   'Reset Security Settings',
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.errorColor,
                   ),
                 ),
               ],
             ),
             
-            const SizedBox(height: 12.0),
+            const SizedBox(height: AppSpacing.m),
             
-            const Text(
+            Text(
               'Warning: This will remove all security settings including PIN, password, and biometric settings.',
-              style: TextStyle(color: Colors.red),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.errorColor,
+              ),
             ),
             
-            const SizedBox(height: 16.0),
+            const SizedBox(height: AppSpacing.l),
             
             ElderlyFriendlyButton(
               onPressed: () => _showResetConfirmationDialog(notifier),
               text: 'Reset All Security Settings',
               icon: Icons.restart_alt,
-              backgroundColor: Colors.red,
+              backgroundColor: AppTheme.errorColor,
               textColor: Colors.white,
             ),
           ],
@@ -637,58 +1050,163 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   
   Widget _buildSecurityTips() {
     return Card(
-      elevation: 4.0,
-      color: Colors.blue.shade50,
+      elevation: 2,
+      color: AppTheme.secondaryColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+        side: const BorderSide(width: 2, color: AppTheme.primaryColor),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.security, size: 24.0, color: Colors.blue),
-                const SizedBox(width: 12.0),
-                const Text(
+                Icon(
+                  Icons.security,
+                  size: AppSpacing.iconSizeMedium,
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(
                   'Security Tips',
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],
             ),
             
-            const SizedBox(height: 12.0),
+            const SizedBox(height: AppSpacing.m),
             
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green, size: 20.0),
-              title: Text('Use a strong, unique PIN or password'),
-              dense: true,
-            ),
-            
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green, size: 20.0),
-              title: Text('Enable biometric authentication if available'),
-              dense: true,
-            ),
-            
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green, size: 20.0),
-              title: Text('Set auto-lock timeout for added security'),
-              dense: true,
-            ),
-            
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green, size: 20.0),
-              title: Text('Keep your device operating system updated'),
-              dense: true,
-            ),
-            
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green, size: 20.0),
-              title: Text('Don\'t share your PIN or password with others'),
-              dense: true,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeSmall,
+                    ),
+                    title: Text(
+                      'Use a strong, unique PIN or password',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    dense: true,
+                  ),
+                  
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                  
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeSmall,
+                    ),
+                    title: Text(
+                      'Enable biometric authentication if available',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    dense: true,
+                  ),
+                  
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                  
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeSmall,
+                    ),
+                    title: Text(
+                      'Set auto-lock timeout for added security',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    dense: true,
+                  ),
+                  
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                  
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeSmall,
+                    ),
+                    title: Text(
+                      'Keep your device operating system updated',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    dense: true,
+                  ),
+                  
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                  
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: AppTheme.primaryColor,
+                      size: AppSpacing.iconSizeSmall,
+                    ),
+                    title: Text(
+                      'Don\'t share your PIN or password with others',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    dense: true,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -724,34 +1242,127 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Lock Type'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
+        ),
+        title: Text(
+          'Select Lock Type',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: AppTheme.onSurfaceColor,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.pin),
-              title: const Text('PIN'),
-              subtitle: const Text('4-6 digit numeric code'),
-              onTap: () => Navigator.pop(context, AppLockService.lockTypePIN),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  Icons.pin,
+                  color: AppTheme.primaryColor,
+                  size: AppSpacing.iconSizeMedium,
+                ),
+                title: Text(
+                  'PIN',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
+                ),
+                subtitle: Text(
+                  '4-6 digit numeric code',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.neutralColor,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, AppLockService.lockTypePIN),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.m,
+                  vertical: AppSpacing.s,
+                ),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.password),
-              title: const Text('Password'),
-              subtitle: const Text('At least 6 characters'),
-              onTap: () => Navigator.pop(context, AppLockService.lockTypePassword),
+            const SizedBox(height: AppSpacing.s),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  Icons.password,
+                  color: AppTheme.primaryColor,
+                  size: AppSpacing.iconSizeMedium,
+                ),
+                title: Text(
+                  'Password',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
+                ),
+                subtitle: Text(
+                  'At least 6 characters',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.neutralColor,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, AppLockService.lockTypePassword),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.m,
+                  vertical: AppSpacing.s,
+                ),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.fingerprint),
-              title: const Text('Biometric'),
-              subtitle: const Text('Fingerprint or Face ID'),
-              onTap: () => Navigator.pop(context, AppLockService.lockTypeBiometric),
+            const SizedBox(height: AppSpacing.s),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  Icons.fingerprint,
+                  color: AppTheme.primaryColor,
+                  size: AppSpacing.iconSizeMedium,
+                ),
+                title: Text(
+                  'Biometric',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
+                ),
+                subtitle: Text(
+                  'Fingerprint or Face ID',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.neutralColor,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, AppLockService.lockTypeBiometric),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.m,
+                  vertical: AppSpacing.s,
+                ),
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.neutralColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -776,10 +1387,17 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     
     await showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Set PIN'),
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
+            ),
+            title: Text(
+              'Set PIN',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: AppTheme.onSurfaceColor,
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -788,9 +1406,15 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   obscureText: !showPin,
                   decoration: InputDecoration(
                     labelText: 'Enter PIN (4-6 digits)',
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.pin, color: AppTheme.neutralColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                    ),
                     suffixIcon: IconButton(
-                      icon: Icon(showPin ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        showPin ? Icons.visibility_off : Icons.visibility,
+                        color: AppTheme.neutralColor,
+                      ),
                       onPressed: () {
                         setState(() {
                           showPin = !showPin;
@@ -799,16 +1423,25 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                     ),
                   ),
                   keyboardType: TextInputType.number,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
-                const SizedBox(height: 12.0),
+                const SizedBox(height: AppSpacing.m),
                 TextFormField(
                   controller: confirmPinController,
                   obscureText: !showConfirmPin,
                   decoration: InputDecoration(
                     labelText: 'Confirm PIN',
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.pin_outlined, color: AppTheme.neutralColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                    ),
                     suffixIcon: IconButton(
-                      icon: Icon(showConfirmPin ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        showConfirmPin ? Icons.visibility_off : Icons.visibility,
+                        color: AppTheme.neutralColor,
+                      ),
                       onPressed: () {
                         setState(() {
                           showConfirmPin = !showConfirmPin;
@@ -817,26 +1450,70 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                     ),
                   ),
                   keyboardType: TextInputType.number,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(
+                  'Cancel',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.neutralColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: AppTheme.onPrimaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.l,
+                    vertical: AppSpacing.m,
+                  ),
+                ),
                 onPressed: () async {
                   if (pinController.text.length < 4) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('PIN must be at least 4 digits')),
+                      SnackBar(
+                        content: Text(
+                          'PIN must be at least 4 digits',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.errorColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        ),
+                      ),
                     );
                     return;
                   }
                   
                   if (pinController.text != confirmPinController.text) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('PINs do not match')),
+                      SnackBar(
+                        content: Text(
+                          'PINs do not match',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.errorColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        ),
+                      ),
                     );
                     return;
                   }
@@ -845,11 +1522,29 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   if (success) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('PIN set successfully')),
+                      SnackBar(
+                        content: Text(
+                          'PIN set successfully',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.primaryColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        ),
+                      ),
                     );
                   }
                 },
-                child: const Text('Set PIN'),
+                child: Text(
+                  'Set PIN',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onPrimaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           );
@@ -869,7 +1564,16 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('Set Password'),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
+            ),
+            title: Text(
+              'Set Password',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: AppTheme.onSurfaceColor,
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -878,9 +1582,15 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   obscureText: !showPassword,
                   decoration: InputDecoration(
                     labelText: 'Enter Password (min. 6 characters)',
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock_outline, color: AppTheme.neutralColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                    ),
                     suffixIcon: IconButton(
-                      icon: Icon(showPassword ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        showPassword ? Icons.visibility_off : Icons.visibility,
+                        color: AppTheme.neutralColor,
+                      ),
                       onPressed: () {
                         setState(() {
                           showPassword = !showPassword;
@@ -888,16 +1598,25 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                       },
                     ),
                   ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
-                const SizedBox(height: 12.0),
+                const SizedBox(height: AppSpacing.m),
                 TextFormField(
                   controller: confirmPasswordController,
                   obscureText: !showConfirmPassword,
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock, color: AppTheme.neutralColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                    ),
                     suffixIcon: IconButton(
-                      icon: Icon(showConfirmPassword ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(
+                        showConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                        color: AppTheme.neutralColor,
+                      ),
                       onPressed: () {
                         setState(() {
                           showConfirmPassword = !showConfirmPassword;
@@ -905,26 +1624,70 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                       },
                     ),
                   ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                  ),
                 ),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(
+                  'Cancel',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.neutralColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: AppTheme.onPrimaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.l,
+                    vertical: AppSpacing.m,
+                  ),
+                ),
                 onPressed: () async {
                   if (passwordController.text.length < 6) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password must be at least 6 characters')),
+                      SnackBar(
+                        content: Text(
+                          'Password must be at least 6 characters',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.errorColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        ),
+                      ),
                     );
                     return;
                   }
                   
                   if (passwordController.text != confirmPasswordController.text) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Passwords do not match')),
+                      SnackBar(
+                        content: Text(
+                          'Passwords do not match',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.errorColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        ),
+                      ),
                     );
                     return;
                   }
@@ -933,11 +1696,29 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   if (success) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password set successfully')),
+                      SnackBar(
+                        content: Text(
+                          'Password set successfully',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.primaryColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                        ),
+                      ),
                     );
                   }
                 },
-                child: const Text('Set Password'),
+                child: Text(
+                  'Set Password',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onPrimaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           );
@@ -950,17 +1731,49 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Disable App Lock'),
-        content: const Text('Are you sure you want to disable app lock? This will remove all security settings.'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
+        ),
+        title: Text(
+          'Disable App Lock',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: AppTheme.errorColor,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to disable app lock? This will remove all security settings.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppTheme.onSurfaceColor,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.neutralColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Disable'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+              ),
+            ),
+            child: Text(
+              'Disable',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -970,7 +1783,19 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       final success = await notifier.disableLock();
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('App lock disabled')),
+          SnackBar(
+            content: Text(
+              'App lock disabled',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: AppTheme.primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+            ),
+          ),
         );
       }
     }
@@ -980,26 +1805,69 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Security Settings'),
-        content: const Text('This will remove all security settings including PIN, password, and biometric settings. Are you sure?'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
+        ),
+        title: Text(
+          'Reset Security Settings',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: AppTheme.errorColor,
+          ),
+        ),
+        content: Text(
+          'This will remove all security settings including PIN, password, and biometric settings. Are you sure?',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppTheme.onSurfaceColor,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.neutralColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Reset'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+              ),
+            ),
+            child: Text(
+              'Reset',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
     );
     
     if (result == true) {
-      // This would require implementing a reset method in AppLockService
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reset functionality to be implemented')),
+        SnackBar(
+          content: Text(
+            'Reset functionality to be implemented',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     }
   }
@@ -1009,17 +1877,40 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final success = await notifier.enableBiometric();
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometric authentication enabled')),
+        SnackBar(
+          content: Text(
+            'Biometric authentication enabled',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     }
   }
   
   Future<void> _disableBiometric(AppLockNotifier notifier) async {
-    // For now, just disable the entire lock
     final success = await notifier.disableLock();
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometric authentication disabled')),
+        SnackBar(
+          content: Text(
+            'Biometric authentication disabled',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     }
   }
@@ -1028,11 +1919,35 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final success = await notifier.authenticateWithBiometrics();
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometric authentication successful')),
+        SnackBar(
+          content: Text(
+            'Biometric authentication successful',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometric authentication failed')),
+        SnackBar(
+          content: Text(
+            'Biometric authentication failed',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     }
   }
@@ -1040,21 +1955,57 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   Future<void> _changePIN(AppLockNotifier notifier) async {
     if (_oldPinController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter current PIN')),
+        SnackBar(
+          content: Text(
+            'Please enter current PIN',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
       return;
     }
     
     if (_pinController.text.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('New PIN must be at least 4 digits')),
+        SnackBar(
+          content: Text(
+            'New PIN must be at least 4 digits',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
       return;
     }
     
     if (_pinController.text != _confirmPinController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PINs do not match')),
+        SnackBar(
+          content: Text(
+            'PINs do not match',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
       return;
     }
@@ -1065,7 +2016,19 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       _pinController.clear();
       _confirmPinController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN changed successfully')),
+        SnackBar(
+          content: Text(
+            'PIN changed successfully',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     }
   }
@@ -1073,21 +2036,57 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   Future<void> _changePassword(AppLockNotifier notifier) async {
     if (_oldPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter current password')),
+        SnackBar(
+          content: Text(
+            'Please enter current password',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
       return;
     }
     
     if (_passwordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('New password must be at least 6 characters')),
+        SnackBar(
+          content: Text(
+            'New password must be at least 6 characters',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
       return;
     }
     
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
+        SnackBar(
+          content: Text(
+            'Passwords do not match',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
       return;
     }
@@ -1102,7 +2101,19 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       _passwordController.clear();
       _confirmPasswordController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed successfully')),
+        SnackBar(
+          content: Text(
+            'Password changed successfully',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+          ),
+        ),
       );
     }
   }

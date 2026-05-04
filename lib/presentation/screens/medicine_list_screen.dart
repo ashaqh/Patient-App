@@ -244,7 +244,7 @@ class MedicineListScreen extends ConsumerWidget {
             Text('Frequency: ${medicine.frequency}'),
             if (medicine.times.isNotEmpty)
               Text(
-                'Times: ${medicine.times.join(", ")}',
+                'Times: ${medicine.times.map(_formatTimeForDisplay).join(", ")}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             if (isTodayMedicine && nextReminderTime != null)
@@ -314,9 +314,11 @@ class MedicineListScreen extends ConsumerWidget {
   }
 
   String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
+    final hour = time.hour;
     final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$hour12:$minute $period';
   }
 
   void _showSearchDialog(BuildContext context, WidgetRef ref) async {
@@ -402,13 +404,10 @@ class MedicineListScreen extends ConsumerWidget {
   }
 
   void _editMedicine(BuildContext context, Medicine medicine) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit ${medicine.name}'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddMedicineScreen(medicine: medicine),
       ),
     );
   }
@@ -445,7 +444,7 @@ class MedicineListScreen extends ConsumerWidget {
               _buildDetailItem(context, 'Dosage', medicine.dosage, Icons.balance),
               _buildDetailItem(context, 'Frequency', medicine.frequency, Icons.schedule),
               if (medicine.times.isNotEmpty)
-                _buildDetailItem(context, 'Times', medicine.times.join(", "), Icons.access_time),
+                _buildDetailItem(context, 'Times', medicine.times.map(_formatTimeForDisplay).join(", "), Icons.access_time),
               _buildDetailItem(
                 context,
                 'Start Date',
@@ -563,6 +562,22 @@ class MedicineListScreen extends ConsumerWidget {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  String _formatTimeForDisplay(String time24) {
+    try {
+      final parts = time24.split(':');
+      if (parts.length != 2) return time24;
+      
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour12:$minuteStr $period';
+    } catch (e) {
+      return time24;
     }
   }
 }

@@ -57,10 +57,26 @@ dependencies:
   intl: ^0.19.0
   uuid: ^4.4.0
   
+# File Opening
+  open_file: ^3.3.3
+
   # Fonts
   google_fonts: ^6.2.0
 
-dev_dependencies:
+  # Charting Libraries
+  fl_chart: ^0.66.0  # Free alternative for charts - compatible version
+  # syncfusion_flutter_charts: ^25.1.47  # Commercial library - uncomment if you have a license
+  
+# Health Integration
+  health: ^13.3.1  # For Apple HealthKit and Google Fit integration
+  
+  # Device Information
+  device_info_plus: ^12.1.0
+  
+  # Network Information
+  connectivity_plus: ^6.0.3
+  network_info_plus: ^7.0.0
+  
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

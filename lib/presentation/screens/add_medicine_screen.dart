@@ -5,9 +5,12 @@ import 'package:intl/intl.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../providers/medicine_provider.dart';
+import '../../domain/entities/medicine.dart';
 
 class AddMedicineScreen extends ConsumerStatefulWidget {
-  const AddMedicineScreen({super.key});
+  final Medicine? medicine;
+  
+  const AddMedicineScreen({super.key, this.medicine});
 
   @override
   ConsumerState<AddMedicineScreen> createState() => _AddMedicineScreenState();
@@ -37,6 +40,24 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize form fields if editing existing medicine
+    final medicine = widget.medicine;
+    if (medicine != null) {
+      _nameController.text = medicine.name;
+      _dosageController.text = medicine.dosage;
+      _frequencyController.text = medicine.frequency;
+      _selectedTimes.addAll(medicine.times);
+      _startDate = medicine.startDate;
+      _endDate = medicine.endDate;
+      _notesController.text = medicine.notes ?? '';
+      _instructionsController.text = medicine.instructions ?? '';
+      _isActive = medicine.isActive;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _dosageController.dispose();
@@ -48,9 +69,10 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.medicine != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Medicine'),
+        title: Text(isEditing ? 'Edit Medicine' : 'Add Medicine'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
@@ -251,7 +273,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
             runSpacing: 8,
             children: _selectedTimes.map((time) {
               return Chip(
-                label: Text(time),
+                label: Text(_formatTimeForDisplay(time)),
                 onDeleted: () => _removeTime(time),
                 deleteIcon: const Icon(Icons.close, size: 16),
               );
@@ -341,11 +363,15 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
 
   Widget _buildAddButton(BuildContext context) {
     final medicineListState = ref.watch(medicineListProvider);
+    final isEditing = widget.medicine != null;
+    final isLoadingText = isEditing ? 'Updating...' : 'Adding...';
+    final buttonText = isEditing ? 'Update Medicine' : 'Add Medicine';
+    final buttonIcon = isEditing ? Icons.save : Icons.add;
 
     return ElderlyFriendlyButton(
       onPressed: _addMedicine,
-      text: medicineListState.isLoading ? 'Adding...' : 'Add Medicine',
-      icon: medicineListState.isLoading ? null : Icons.add,
+      text: medicineListState.isLoading ? isLoadingText : buttonText,
+      icon: medicineListState.isLoading ? null : buttonIcon,
       width: double.infinity,
       isLoading: medicineListState.isLoading,
     );
@@ -388,6 +414,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
 
       try {
         final medicine = createNewMedicine(
+          id: widget.medicine?.id,
           name: _nameController.text.trim(),
           dosage: _dosageController.text.trim(),
           frequency: _frequencyController.text.trim(),
@@ -399,12 +426,17 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
           isActive: _isActive,
         );
 
-        await ref.read(medicineListProvider.notifier).addMedicine(medicine);
+        final isEditing = widget.medicine != null;
+        if (isEditing) {
+          await ref.read(medicineListProvider.notifier).updateMedicine(medicine);
+        } else {
+          await ref.read(medicineListProvider.notifier).addMedicine(medicine);
+        }
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${medicine.name} added successfully'),
+            content: Text('${medicine.name} ${isEditing ? 'updated' : 'added'} successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -415,11 +447,27 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding medicine: $e'),
+            content: Text('Error ${widget.medicine != null ? 'updating' : 'adding'} medicine: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    }
+  }
+
+  String _formatTimeForDisplay(String time24) {
+    try {
+      final parts = time24.split(':');
+      if (parts.length != 2) return time24;
+      
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour12:$minuteStr $period';
+    } catch (e) {
+      return time24;
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 
 import '../../domain/entities/prescription.dart';
 import '../providers/prescription_provider.dart';
@@ -121,7 +122,7 @@ class PrescriptionListScreen extends ConsumerWidget {
       children: [
         // Recent prescriptions section
         if (recentPrescriptionsAsync.valueOrNull?.isNotEmpty == true) ...[
-          _buildRecentPrescriptionsSection(context, recentPrescriptionsAsync),
+          _buildRecentPrescriptionsSection(context, ref, recentPrescriptionsAsync),
           const Divider(),
         ],
         
@@ -135,6 +136,7 @@ class PrescriptionListScreen extends ConsumerWidget {
 
   Widget _buildRecentPrescriptionsSection(
     BuildContext context,
+    WidgetRef ref,
     AsyncValue<List<Prescription>> recentPrescriptionsAsync,
   ) {
     return recentPrescriptionsAsync.when(
@@ -154,7 +156,7 @@ class PrescriptionListScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               ...prescriptions.map((prescription) => 
-                _buildPrescriptionCard(context, prescription, isRecent: true)
+                _buildPrescriptionCard(context, ref, prescription, isRecent: true)
               ).toList(),
             ],
           ),
@@ -178,7 +180,7 @@ class PrescriptionListScreen extends ConsumerWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final prescription = prescriptionListState.prescriptions[index];
-          return _buildPrescriptionCard(context, prescription);
+          return _buildPrescriptionCard(context, ref, prescription);
         },
       ),
     );
@@ -186,6 +188,7 @@ class PrescriptionListScreen extends ConsumerWidget {
 
   Widget _buildPrescriptionCard(
     BuildContext context,
+    WidgetRef ref,
     Prescription prescription, {
     bool isRecent = false,
   }) {
@@ -196,7 +199,7 @@ class PrescriptionListScreen extends ConsumerWidget {
           _showPrescriptionDetails(context, prescription);
         },
         onLongPress: () {
-          _showPrescriptionActions(context, prescription);
+          _showPrescriptionActions(context, ref, prescription);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -358,11 +361,34 @@ class PrescriptionListScreen extends ConsumerWidget {
             child: const Text('Close'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Implement file viewing
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('File viewing feature coming soon')),
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              scaffoldMessenger.showSnackBar(
+                SnackBar(content: Text('Opening ${prescription.fileName}...')),
               );
+              
+              try {
+                // Open the file using the file path
+                final result = await OpenFile.open(prescription.filePath);
+                
+                if (result.type != ResultType.done) {
+                  // Show error message if file couldn't be opened
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to open file: ${result.message}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                // Show error message if an exception occurs
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Error opening file: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: const Text('View File'),
           ),
@@ -393,7 +419,7 @@ class PrescriptionListScreen extends ConsumerWidget {
     );
   }
 
-  void _showPrescriptionActions(BuildContext context, Prescription prescription) {
+  void _showPrescriptionActions(BuildContext context, WidgetRef ref, Prescription prescription) {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -422,10 +448,10 @@ class PrescriptionListScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context, prescription);
-              },
+onTap: () {
+              Navigator.pop(context);
+              _showDeleteConfirmation(context, ref, prescription);
+            },
             ),
           ],
         ),
@@ -433,7 +459,7 @@ class PrescriptionListScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, Prescription prescription) {
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, Prescription prescription) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -445,9 +471,9 @@ class PrescriptionListScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _deletePrescription(context, prescription);
+              await _deletePrescription(context, ref, prescription);
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -459,11 +485,13 @@ class PrescriptionListScreen extends ConsumerWidget {
     );
   }
 
-  void _deletePrescription(BuildContext context, Prescription prescription) {
+  Future<void> _deletePrescription(BuildContext context, WidgetRef ref, Prescription prescription) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     
     try {
-      // TODO: Implement delete functionality with provider
+      await ref.read(prescriptionListProvider.notifier).deletePrescription(prescription.id);
+      // Invalidate the recent prescriptions provider to refresh the list
+      ref.invalidate(recentPrescriptionsProvider);
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('Deleted "${prescription.fileName}"')),
       );
