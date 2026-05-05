@@ -204,9 +204,9 @@ class DashboardScreenNew extends ConsumerWidget {
               mainAxisSpacing: AppSpacing.s,
               crossAxisSpacing: AppSpacing.s,
               children: [
-                _buildStatCard(
+_buildStatCard(
                   context,
-                  'Total',
+                  'Total Reminders',
                   total.toString(),
                   Icons.medication,
                   AppTheme.primaryColor,

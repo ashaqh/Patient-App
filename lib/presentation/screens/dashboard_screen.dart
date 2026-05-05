@@ -1273,7 +1273,7 @@ color: AppTheme.errorColor,
           children: [
             _buildStatItem(
               context,
-              'Total',
+              'Total Reminders',
               total.toString(),
               Icons.list_alt,
               Theme.of(context).colorScheme.primary,

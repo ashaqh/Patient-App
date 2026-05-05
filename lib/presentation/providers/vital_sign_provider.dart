@@ -353,8 +353,16 @@ final vitalSignListProvider =
 
 // Today's vital signs provider
 final todaysVitalSignsProvider = Provider<List<VitalSign>>((ref) {
-  final notifier = ref.watch(vitalSignListProvider.notifier);
+  ref.watch(vitalSignListProvider);
+  final notifier = ref.read(vitalSignListProvider.notifier);
   return notifier.todaysVitalSigns;
+});
+
+// Latest vital signs provider
+final latestVitalSignsProvider = Provider<Map<VitalSignType, VitalSign?>>((ref) {
+  ref.watch(vitalSignListProvider);
+  final state = ref.read(vitalSignListProvider);
+  return state.latestReadings;
 });
 
 // Latest vital signs provider
@@ -368,7 +376,8 @@ final latestVitalSignsProvider = Provider<Map<VitalSignType, VitalSign?>>((
 // Vital sign statistics provider (7-day stats for all types)
 final vitalSignStatisticsProvider =
     Provider<Map<VitalSignType, Map<String, dynamic>>>((ref) {
-      final notifier = ref.watch(vitalSignListProvider.notifier);
+      ref.watch(vitalSignListProvider);
+      final notifier = ref.read(vitalSignListProvider.notifier);
 
       final stats = <VitalSignType, Map<String, dynamic>>{};
       for (final type in VitalSignType.values) {
@@ -380,15 +389,16 @@ final vitalSignStatisticsProvider =
 
 // Abnormal vital signs provider (vital signs outside target range)
 final abnormalVitalSignsProvider = Provider<List<VitalSign>>((ref) {
-  final notifier = ref.watch(vitalSignListProvider.notifier);
-  final vitalSigns = notifier.filteredVitalSigns;
-  
-  // Filter for abnormal vital signs (outside target range)
-  return vitalSigns.where((vs) => !vs.isWithinTargetRange).toList();
+  ref.watch(vitalSignListProvider);
+  final notifier = ref.read(vitalSignListProvider.notifier);
+  return notifier.filteredVitalSigns
+      .where((vs) => !vs.isWithinTargetRange)
+      .toList();
 });
 
 // Filtered vital signs provider
 final filteredVitalSignsProvider = Provider<List<VitalSign>>((ref) {
-  final notifier = ref.watch(vitalSignListProvider.notifier);
+  ref.watch(vitalSignListProvider);
+  final notifier = ref.read(vitalSignListProvider.notifier);
   return notifier.filteredVitalSigns;
 });

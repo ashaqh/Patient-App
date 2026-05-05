@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/themes/app_theme.dart';
@@ -22,7 +23,6 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
   @override
   void initState() {
     super.initState();
-    // Refresh vital signs when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(vitalSignListProvider.notifier).refresh();
     });
@@ -106,6 +106,429 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
         ref.read(vitalSignListProvider.notifier).setSearchQuery(value);
       },
     );
+  }
+
+  Widget _buildVitalSignChart({
+    required VitalSignType type,
+    required List<VitalSign> vitalSigns,
+    bool showLegend = true,
+    bool isCompact = false,
+  }) {
+    if (vitalSigns.isEmpty) {
+      return _buildEmptyChartState(type);
+    }
+
+    final sortedSigns = List<VitalSign>.from(vitalSigns)
+      ..sort((a, b) => a.readingTime.compareTo(b.readingTime));
+
+    final spots = <FlSpot>[];
+    final systolicSpots = <FlSpot>[];
+    final diastolicSpots = <FlSpot>[];
+
+    for (int i = 0; i < sortedSigns.length; i++) {
+      final sign = sortedSigns[i];
+      spots.add(FlSpot(i.toDouble(), sign.value1));
+      
+      if (type == VitalSignType.bloodPressure && sign.value2 != null) {
+        systolicSpots.add(FlSpot(i.toDouble(), sign.value1));
+        diastolicSpots.add(FlSpot(i.toDouble(), sign.value2!));
+      }
+    }
+
+    final minY = sortedSigns.map((s) => s.value1).reduce((a, b) => a < b ? a : b);
+    final maxY = sortedSigns.map((s) => s.value1).reduce((a, b) => a > b ? a : b);
+    
+    double chartMinY = minY - (maxY - minY) * 0.1;
+    double chartMaxY = maxY + (maxY - minY) * 0.1;
+    
+    if (type == VitalSignType.bloodPressure) {
+      final minDiastolic = sortedSigns.map((s) => s.value2 ?? 0).reduce((a, b) => a < b ? a : b);
+      final maxDiastolic = sortedSigns.map((s) => s.value2 ?? 0).reduce((a, b) => a > b ? a : b);
+      chartMinY = (chartMinY < minDiastolic - 10) ? chartMinY : minDiastolic - 10;
+      chartMaxY = (chartMaxY > maxDiastolic + 10) ? chartMaxY : maxDiastolic + 10;
+    }
+
+    if (chartMinY < type.minValue) chartMinY = type.minValue;
+    if (chartMaxY > type.maxValue) chartMaxY = type.maxValue;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isCompact) ...[
+          Row(
+            children: [
+              Text(
+                type.icon ?? '📊',
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                type.displayName,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              if (!isCompact)
+                Text(
+                  '${sortedSigns.length} ${sortedSigns.length == 1 ? 'reading' : 'readings'}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (showLegend && type == VitalSignType.bloodPressure) ...[
+          Row(
+            children: [
+              _buildLegendItem('Systolic', Colors.red),
+              const SizedBox(width: 16),
+              _buildLegendItem('Diastolic', Colors.blue),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        SizedBox(
+          height: isCompact ? 120 : 200,
+          child: LineChart(
+            LineChartData(
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: (chartMaxY - chartMinY) / 4,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: AppTheme.onSurfaceVariant.withOpacity(0.2),
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    interval: sortedSigns.length > 7 
+                        ? (sortedSigns.length / 5).ceilToDouble() 
+                        : 1,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index < 0 || index >= sortedSigns.length) {
+                        return const SizedBox.shrink();
+                      }
+                      final date = sortedSigns[index].readingTime;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          DateFormat('MM/dd').format(date),
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 45,
+                    interval: (chartMaxY - chartMinY) / 4,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(fontSize: 10),
+                      );
+                    },
+                  ),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppTheme.onSurfaceVariant.withOpacity(0.3),
+                  ),
+                  left: BorderSide(
+                    color: AppTheme.onSurfaceVariant.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              minX: 0,
+              maxX: (sortedSigns.length - 1).toDouble(),
+              minY: chartMinY,
+              maxY: chartMaxY,
+              lineBarsData: [
+                if (type == VitalSignType.bloodPressure) ...[
+                  LineChartBarData(
+                    spots: systolicSpots,
+                    isCurved: true,
+                    color: Colors.red,
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, bar, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Colors.red,
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Colors.red.withOpacity(0.1),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: diastolicSpots,
+                    isCurved: true,
+                    color: Colors.blue,
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, bar, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Colors.blue,
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Colors.blue.withOpacity(0.1),
+                    ),
+                  ),
+                ] else ...[
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: _getChartColor(type),
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, bar, index) {
+                        final statusColor = sortedSigns[index].statusColor;
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: _getStatusColor(statusColor),
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: _getChartColor(type).withOpacity(0.1),
+                    ),
+                  ),
+                ],
+              ],
+              lineTouchData: LineTouchData(
+                enabled: true,
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((spot) {
+                      final index = spot.x.toInt();
+                      if (index < 0 || index >= sortedSigns.length) {
+                        return null;
+                      }
+                      final sign = sortedSigns[index];
+                      String label;
+                      if (type == VitalSignType.bloodPressure) {
+                        label = '${spot.y.toInt()}/${sign.value2?.toInt() ?? 0}';
+                      } else {
+                        label = '${spot.y.toStringAsFixed(1)}';
+                      }
+                      return LineTooltipItem(
+                        '${DateFormat('MMM dd, HH:mm').format(sign.readingTime)}\n$label ${type.unit}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
+              extraLinesData: ExtraLinesData(
+                horizontalLines: [
+                  if (type.targetMin != null && type.targetMax != null) ...[
+                    HorizontalLine(
+                      y: type.targetMin!,
+                      color: Colors.green.withOpacity(0.5),
+                      strokeWidth: 1,
+                      dashArray: [5, 5],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        labelResolver: (line) => 'Min: ${type.targetMin!.toInt()}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+                    HorizontalLine(
+                      y: type.targetMax!,
+                      color: Colors.green.withOpacity(0.5),
+                      strokeWidth: 1,
+                      dashArray: [5, 5],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.bottomRight,
+                        labelResolver: (line) => 'Max: ${type.targetMax!.toInt()}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!isCompact && sortedSigns.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _buildLatestReading(sortedSigns.last),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLatestReading(VitalSign sign) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _getStatusColor(sign.statusColor).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _getStatusColor(sign.statusColor).withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Latest: ${sign.displayValue}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            DateFormat('MMM dd, HH:mm').format(sign.readingTime),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyChartState(VitalSignType type) {
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(
+        color: AppTheme.onSurfaceVariant.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.onSurfaceVariant.withOpacity(0.2),
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              type.icon ?? '📊',
+              style: const TextStyle(fontSize: 32),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No ${type.displayName} data yet',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap + to add your first reading',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getChartColor(VitalSignType type) {
+    switch (type) {
+      case VitalSignType.bloodPressure:
+        return Colors.red;
+      case VitalSignType.bloodSugar:
+        return Colors.orange;
+      case VitalSignType.weight:
+        return Colors.purple;
+      case VitalSignType.temperature:
+        return Colors.amber;
+      case VitalSignType.oxygen:
+        return Colors.blue;
+    }
+  }
+
+  Color _getStatusColor(String colorName) {
+    switch (colorName) {
+      case 'red':
+        return Colors.red;
+      case 'orange':
+        return Colors.orange;
+      case 'yellow':
+        return Colors.amber;
+      case 'green':
+        return Colors.green;
+      default:
+        return AppTheme.primaryColor;
+    }
   }
 
   Widget _buildVitalSignCard(VitalSign vitalSign) {
@@ -240,33 +663,19 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                 MaterialPageRoute(
                   builder: (context) => AddVitalSignScreen(vitalSign: vitalSign),
                 ),
-              );
+              ).then((_) {
+                ref.read(vitalSignListProvider.notifier).refresh();
+              });
             } else if (value == 'delete') {
               _showDeleteDialog(vitalSign);
             }
           },
         ),
         onTap: () {
-          // Show details dialog
           _showVitalSignDetails(vitalSign);
         },
       ),
     );
-  }
-
-  Color _getStatusColor(String colorName) {
-    switch (colorName) {
-      case 'red':
-        return Colors.red;
-      case 'orange':
-        return Colors.orange;
-      case 'yellow':
-        return Colors.amber;
-      case 'green':
-        return Colors.green;
-      default:
-        return AppTheme.primaryColor;
-    }
   }
 
   void _showDeleteDialog(VitalSign vitalSign) {
@@ -383,7 +792,9 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                 MaterialPageRoute(
                   builder: (context) => AddVitalSignScreen(vitalSign: vitalSign),
                 ),
-              );
+              ).then((_) {
+                ref.read(vitalSignListProvider.notifier).refresh();
+              });
             },
             child: const Text('Edit'),
           ),
@@ -424,7 +835,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.monitor_heart_outlined,
             size: 64,
             color: AppTheme.onSurfaceVariant,
@@ -452,7 +863,9 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                 MaterialPageRoute(
                   builder: (context) => const AddVitalSignScreen(),
                 ),
-              );
+              ).then((_) {
+                ref.read(vitalSignListProvider.notifier).refresh();
+              });
             },
             text: 'Add First Vital Sign',
             icon: Icons.add,
@@ -473,7 +886,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             size: 64,
             color: AppTheme.errorColor,
@@ -506,6 +919,212 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
     );
   }
 
+  Widget _buildGraphView(VitalSignFilter filter, List<VitalSign> vitalSigns) {
+    if (filter == VitalSignFilter.all) {
+      return _buildAllGraphsView(vitalSigns);
+    } else if (filter == VitalSignFilter.abnormal) {
+      return _buildAbnormalGraphsView(vitalSigns);
+    } else {
+      final type = _filterToType(filter);
+      if (type == null) return _buildEmptyState();
+      
+      final filtered = vitalSigns.where((vs) => vs.type == type).toList();
+      return _buildSingleTypeGraphView(type, filtered);
+    }
+  }
+
+  VitalSignType? _filterToType(VitalSignFilter filter) {
+    switch (filter) {
+      case VitalSignFilter.bloodPressure:
+        return VitalSignType.bloodPressure;
+      case VitalSignFilter.bloodSugar:
+        return VitalSignType.bloodSugar;
+      case VitalSignFilter.weight:
+        return VitalSignType.weight;
+      case VitalSignFilter.temperature:
+        return VitalSignType.temperature;
+      case VitalSignFilter.oxygen:
+        return VitalSignType.oxygen;
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildAllGraphsView(List<VitalSign> allVitalSigns) {
+    final graphs = <Widget>[];
+    
+    for (final type in VitalSignType.values) {
+      final typeSigns = allVitalSigns.where((vs) => vs.type == type).toList();
+      graphs.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: _buildVitalSignChart(
+                type: type,
+                vitalSigns: typeSigns,
+                showLegend: true,
+                isCompact: false,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final hasAnyData = allVitalSigns.isNotEmpty;
+
+    return hasAnyData
+        ? ListView(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            children: graphs,
+          )
+        : _buildEmptyState();
+  }
+
+  Widget _buildAbnormalGraphsView(List<VitalSign> abnormalSigns) {
+    if (abnormalSigns.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: Colors.green,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'All readings are normal!',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.green,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No abnormal vital signs detected',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final groupedByType = <VitalSignType, List<VitalSign>>{};
+    for (final sign in abnormalSigns) {
+      groupedByType.putIfAbsent(sign.type, () => []).add(sign);
+    }
+
+    final graphs = <Widget>[];
+    groupedByType.forEach((type, signs) {
+      graphs.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(type.icon ?? '📊', style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 8),
+                      Text(
+                        type.displayName,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${signs.length} abnormal',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildVitalSignChart(
+                    type: type,
+                    vitalSigns: signs,
+                    showLegend: false,
+                    isCompact: true,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      children: graphs,
+    );
+  }
+
+  Widget _buildSingleTypeGraphView(VitalSignType type, List<VitalSign> vitalSigns) {
+    if (vitalSigns.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              type.icon ?? '📊',
+              style: const TextStyle(fontSize: 64),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No ${type.displayName} data yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppTheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap + to add your first reading',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: _buildVitalSignChart(
+            type: type,
+            vitalSigns: vitalSigns,
+            showLegend: type == VitalSignType.bloodPressure,
+            isCompact: false,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vitalSignListProvider);
@@ -532,7 +1151,6 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
               ? _buildErrorState(state.error!)
               : Column(
                   children: [
-                    // Search and Filter Section
                     Padding(
                       padding: const EdgeInsets.all(AppSpacing.m),
                       child: Column(
@@ -543,53 +1161,8 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                         ],
                       ),
                     ),
-                    
-                    // Statistics Summary
-                    if (vitalSigns.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.m,
-                          vertical: AppSpacing.s,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${vitalSigns.length} ${vitalSigns.length == 1 ? 'entry' : 'entries'}',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.onSurfaceVariant,
-                              ),
-                            ),
-                            Text(
-                              'Sorted by: Newest first',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    
-                    // Vital Signs List
                     Expanded(
-                      child: vitalSigns.isEmpty
-                          ? _buildEmptyState()
-                          : RefreshIndicator(
-                              onRefresh: () async {
-                                await ref.read(vitalSignListProvider.notifier).refresh();
-                              },
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.m,
-                                  vertical: AppSpacing.s,
-                                ),
-                                itemCount: vitalSigns.length,
-                                itemBuilder: (context, index) {
-                                  return _buildVitalSignCard(vitalSigns[index]);
-                                },
-                              ),
-                            ),
+                      child: _buildGraphView(state.filter, vitalSigns),
                     ),
                   ],
                 ),
@@ -600,7 +1173,9 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
             MaterialPageRoute(
               builder: (context) => const AddVitalSignScreen(),
             ),
-          );
+          ).then((_) {
+            ref.read(vitalSignListProvider.notifier).refresh();
+          });
         },
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: AppTheme.onPrimaryColor,

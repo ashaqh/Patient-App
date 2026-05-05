@@ -93,10 +93,19 @@ class ReminderScheduler {
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+    final tomorrowEnd = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59, 59);
 
-    // Get existing reminder logs for this medicine (today and tomorrow)
-    final existingLogs = await _reminderLogRepository.getReminderLogsByMedicineId(medicine.id);
-    
+    // Get existing reminder logs for this medicine
+    final allExistingLogs = await _reminderLogRepository.getReminderLogsByMedicineId(medicine.id);
+
+    // Filter to only include logs for today and tomorrow to avoid false matches from other dates
+    final existingLogs = allExistingLogs.where((log) {
+      return (log.scheduledTime.isAfter(today.subtract(const Duration(seconds: 1))) &&
+              log.scheduledTime.isBefore(tomorrowEnd.add(const Duration(seconds: 1))));
+    }).toList();
+
     bool hasScheduledToday = false;
     DateTime? nextScheduledTime;
 
@@ -110,14 +119,12 @@ class ReminderScheduler {
         final minute = int.parse(parts[1]);
         final scheduledTime = DateTime(today.year, today.month, today.day, hour, minute);
 
-        // Check if a reminder log already exists for this scheduled time
-        bool logExists = false;
-        for (final log in existingLogs) {
-          if (_isSameTime(log.scheduledTime, scheduledTime)) {
-            logExists = true;
-            break;
-          }
-        }
+        // Check if a reminder log already exists for this specific scheduled time (date AND time)
+        bool logExists = existingLogs.any((log) =>
+            log.scheduledTime.year == scheduledTime.year &&
+            log.scheduledTime.month == scheduledTime.month &&
+            log.scheduledTime.day == scheduledTime.day &&
+            _isSameTime(log.scheduledTime, scheduledTime));
 
         // Only create logs for future reminders if they don't already exist
         if (!logExists && scheduledTime.isAfter(now)) {
@@ -131,8 +138,11 @@ class ReminderScheduler {
 
           await _reminderLogRepository.createReminderLog(reminderLog);
           hasScheduledToday = true;
+          ErrorUtils.logInfo('Created reminder log for today: ${medicine.name} at ${scheduledTime.toIso8601String()}');
+        } else if (logExists) {
+          hasScheduledToday = true;
         }
-        
+
         // Track the next scheduled time
         if (scheduledTime.isAfter(now) && (nextScheduledTime == null || scheduledTime.isBefore(nextScheduledTime))) {
           nextScheduledTime = scheduledTime;
@@ -141,31 +151,28 @@ class ReminderScheduler {
         ErrorUtils.logInfo('Error creating reminder log for time $timeStr: $e');
       }
     }
-    
+
     // If no times were scheduled for today (all times have passed), create logs for ALL times tomorrow
     if (!hasScheduledToday && medicine.times.isNotEmpty) {
       ErrorUtils.logInfo('Creating reminder logs for ALL times tomorrow');
-      final tomorrow = today.add(const Duration(days: 1));
       int tomorrowLogCount = 0;
-      
+
       for (final timeStr in medicine.times) {
         final parts = timeStr.split(':');
         if (parts.length != 2) continue;
-        
+
         try {
           final hour = int.parse(parts[0]);
           final minute = int.parse(parts[1]);
           final scheduledTime = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, hour, minute);
-          
-          // Check if log already exists
-          bool logExists = false;
-          for (final log in existingLogs) {
-            if (_isSameTime(log.scheduledTime, scheduledTime)) {
-              logExists = true;
-              break;
-            }
-          }
-          
+
+          // Check if log already exists for this specific scheduled time
+          bool logExists = existingLogs.any((log) =>
+              log.scheduledTime.year == scheduledTime.year &&
+              log.scheduledTime.month == scheduledTime.month &&
+              log.scheduledTime.day == scheduledTime.day &&
+              _isSameTime(log.scheduledTime, scheduledTime));
+
           if (!logExists) {
             final reminderLog = ReminderLog(
               medicineId: medicine.id,
@@ -183,7 +190,7 @@ class ReminderScheduler {
           ErrorUtils.logInfo('Error creating reminder log for time $timeStr tomorrow: $e');
         }
       }
-      
+
       ErrorUtils.logInfo('Created $tomorrowLogCount reminder logs for tomorrow for medicine: ${medicine.name}');
     }
   }
