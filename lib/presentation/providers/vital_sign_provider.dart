@@ -236,7 +236,7 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
 
   // Get filtered vital signs
   List<VitalSign> get filteredVitalSigns {
-    List<VitalSign> filtered = state.vitalSigns;
+    List<VitalSign> filtered = List.of(state.vitalSigns);
 
     // Apply type filter
     switch (state.filter) {
@@ -377,3 +377,18 @@ final vitalSignStatisticsProvider =
 
       return stats;
     });
+
+// Abnormal vital signs provider (vital signs outside target range)
+final abnormalVitalSignsProvider = Provider<List<VitalSign>>((ref) {
+  final notifier = ref.watch(vitalSignListProvider.notifier);
+  final vitalSigns = notifier.filteredVitalSigns;
+  
+  // Filter for abnormal vital signs (outside target range)
+  return vitalSigns.where((vs) => !vs.isWithinTargetRange).toList();
+});
+
+// Filtered vital signs provider
+final filteredVitalSignsProvider = Provider<List<VitalSign>>((ref) {
+  final notifier = ref.watch(vitalSignListProvider.notifier);
+  return notifier.filteredVitalSigns;
+});

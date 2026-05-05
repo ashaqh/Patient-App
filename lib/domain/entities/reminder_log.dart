@@ -93,7 +93,7 @@ class ReminderLog {
     required this.status,
     this.notes,
     DateTime? createdAt,
-  })  : id = id ?? const Uuid().v4(),
+  })  : id = id ?? Uuid().v4(),
         createdAt = createdAt ?? DateTime.now();
 
   // Create a copy of reminder log with updated fields

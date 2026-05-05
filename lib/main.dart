@@ -20,6 +20,9 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.initialize();
   
+  // Request notification permissions (critical for Android 13+ and iOS)
+  await notificationService.requestNotificationPermissions();
+  
   // Initialize reminder scheduler
   final reminderScheduler = ReminderScheduler(databaseHelper);
   await reminderScheduler.initialize();
@@ -38,3 +41,4 @@ void main() async {
     ),
   );
 }
+

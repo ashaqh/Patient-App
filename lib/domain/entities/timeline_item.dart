@@ -55,7 +55,7 @@ class TimelineItem {
     required this.description,
     required this.status,
     this.metadata,
-  }) : id = id ?? const Uuid().v4();
+  }) : id = id ?? Uuid().v4();
 
   // Create from Medicine
   factory TimelineItem.fromMedicine(Medicine medicine) {

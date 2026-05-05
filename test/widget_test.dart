@@ -27,3 +27,4 @@ void main() {
     expect(find.text('Welcome to CareVault'), findsOneWidget);
   });
 }
+

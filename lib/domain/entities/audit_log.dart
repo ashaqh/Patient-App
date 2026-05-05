@@ -143,7 +143,7 @@ class AuditLog {
     this.details,
     AuditLogSeverity? severity,
     required this.sessionId,
-  })  : id = id ?? const Uuid().v4(),
+  })  : id = id ?? Uuid().v4(),
         timestamp = timestamp ?? DateTime.now(),
         severity = severity ?? (success ? AuditLogSeverity.info : AuditLogSeverity.error);
 

@@ -37,7 +37,7 @@ class DeviceInfoService {
         _cachedDeviceName = '${linuxInfo.prettyName} (Linux)';
       } else {
         // Web or unknown platform
-        _cachedDeviceId = const Uuid().v4();
+        _cachedDeviceId = Uuid().v4();
         _cachedDeviceName = 'Unknown Device';
       }
       
@@ -46,7 +46,7 @@ class DeviceInfoService {
       ErrorUtils.logError('Failed to initialize device info service: $e');
       
       // Fallback to UUID
-      _cachedDeviceId = const Uuid().v4();
+      _cachedDeviceId = Uuid().v4();
       _cachedDeviceName = 'Unknown Device';
       _isInitialized = true;
     }

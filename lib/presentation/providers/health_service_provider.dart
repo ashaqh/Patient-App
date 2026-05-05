@@ -207,10 +207,10 @@ class HealthServiceNotifier extends StateNotifier<HealthServiceState> {
       // 2. Saving to local database
       // 3. Handling duplicates and conflicts
       
-      // For now, we'll just log the data
+// For now, we'll just log the data
       int totalPoints = 0;
       for (final entry in allData.entries) {
-        totalPoints += entry.value.length;
+        totalPoints += entry.value.length as int;
       }
 
       // Update health summary

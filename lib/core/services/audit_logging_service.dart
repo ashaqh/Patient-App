@@ -16,7 +16,7 @@ class AuditLoggingService {
   
   String _currentUserId = 'system';
   String _currentUserRole = 'system';
-  String _currentSessionId = const Uuid().v4();
+  String _currentSessionId = Uuid().v4();
   bool _isInitialized = false;
   
   // HIPAA audit log retention period (6 years as per HIPAA requirements)
@@ -50,7 +50,7 @@ class AuditLoggingService {
   void setUserContext(String userId, String userRole) {
     _currentUserId = userId;
     _currentUserRole = userRole;
-    _currentSessionId = const Uuid().v4();
+    _currentSessionId = Uuid().v4();
     
     // Log user context change
     _logSystemEventAsync(

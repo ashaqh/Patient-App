@@ -157,7 +157,7 @@ class FileUtils {
       final prescriptionsDir = await prescriptionsDirectory;
       final originalName = path.basename(sourceFile.path);
       final fileExtension = path.extension(originalName);
-      final uniqueName = 'prescription_${const Uuid().v4()}$fileExtension';
+      final uniqueName = 'prescription_${Uuid().v4()}$fileExtension';
       final destinationPath = path.join(prescriptionsDir.path, uniqueName);
       
       // Save file

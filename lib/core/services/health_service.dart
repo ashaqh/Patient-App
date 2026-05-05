@@ -101,3 +101,4 @@ class HealthService {
     // No cleanup needed for stub
   }
 }
+

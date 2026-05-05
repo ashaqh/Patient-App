@@ -588,3 +588,4 @@ class _AuditLogReportingScreenState
     );
   }
 }
+

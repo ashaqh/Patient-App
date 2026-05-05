@@ -448,3 +448,4 @@ class HealthService {
     // HealthFactory doesn't need explicit disposal
   }
 }
+

@@ -26,3 +26,4 @@ class AppScaffold extends StatelessWidget {
     );
   }
 }
+

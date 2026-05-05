@@ -425,9 +425,10 @@ class _VitalSignsDashboardScreenState extends ConsumerState<VitalSignsDashboardS
   }
 
   @override
-  Widget build(BuildContext context) {
+Widget build(BuildContext context) {
     final state = ref.watch(vitalSignListProvider);
-    final vitalSigns = state.getVitalSignsByType(_selectedType);
+    final notifier = ref.watch(vitalSignListProvider.notifier);
+    final vitalSigns = notifier.getVitalSignsByType(_selectedType);
     final now = DateTime.now();
     final startDate = now.subtract(Duration(days: _selectedTimeRange));
     
@@ -437,7 +438,7 @@ class _VitalSignsDashboardScreenState extends ConsumerState<VitalSignsDashboardS
         .toList();
     
     // Calculate statistics
-    final stats = state.getVitalSignStatistics(_selectedType, _selectedTimeRange);
+    final stats = notifier.getVitalSignStatistics(_selectedType, _selectedTimeRange);
 
     return Scaffold(
       appBar: AppBar(
