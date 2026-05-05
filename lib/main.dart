@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'core/services/notification_handler.dart';
 import 'core/services/notification_service.dart';
@@ -29,6 +30,9 @@ void main() async {
   
   // Initialize notification handler
   final notificationHandler = NotificationHandler(notificationService, reminderScheduler);
+  
+  // Wire up notification response callback to handler
+  NotificationService.onNotificationResponseCallback = notificationHandler.handleNotificationResponse;
   
   runApp(
     ProviderScope(
