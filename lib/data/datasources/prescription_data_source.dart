@@ -13,11 +13,15 @@ class PrescriptionDataSource {
   // Create a new prescription
   Future<String> createPrescription(Prescription prescription) async {
     final db = await _databaseHelper.database;
-    await db.insert(
-      DatabaseConstants.tablePrescriptions,
-      prescription.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      await txn.insert(
+        DatabaseConstants.tablePrescriptions,
+        prescription.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tablePrescriptions, prescription.id, 'INSERT');
+    });
     return prescription.id;
   }
 
@@ -36,10 +40,20 @@ class PrescriptionDataSource {
     return null;
   }
 
-  // Get all prescriptions
-  Future<List<Prescription>> getAllPrescriptions({String? orderBy}) async {
+// Get all prescriptions
+  Future<List<Prescription>> getAllPrescriptions({String? orderBy, String? documentType}) async {
     final db = await _databaseHelper.database;
-    
+
+    if (documentType != null) {
+      final maps = await db.query(
+        DatabaseConstants.tablePrescriptions,
+        where: '${DatabaseConstants.columnPrescriptionDocumentType} = ?',
+        whereArgs: [documentType],
+        orderBy: orderBy ?? '${DatabaseConstants.columnPrescriptionDate} DESC',
+      );
+      return maps.map((map) => Prescription.fromMap(map)).toList();
+    }
+
     final maps = await db.query(
       DatabaseConstants.tablePrescriptions,
       orderBy: orderBy ?? '${DatabaseConstants.columnPrescriptionDate} DESC',
@@ -96,28 +110,51 @@ class PrescriptionDataSource {
   // Update prescription
   Future<int> updatePrescription(Prescription prescription) async {
     final db = await _databaseHelper.database;
-    return await db.update(
-      DatabaseConstants.tablePrescriptions,
-      prescription.toMap(),
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [prescription.id],
+    
+    // Bump version and update lastModified for updates
+    final updatedPrescription = prescription.copyWith(
+      version: prescription.version + 1,
+      lastModified: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
+    
+    return await db.transaction((txn) async {
+      final result = await txn.update(
+        DatabaseConstants.tablePrescriptions,
+        updatedPrescription.toMap(),
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [updatedPrescription.id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tablePrescriptions, updatedPrescription.id, 'UPDATE');
+      return result;
+    });
   }
 
   // Delete prescription by ID
   Future<int> deletePrescriptionById(String id) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tablePrescriptions,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tablePrescriptions,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tablePrescriptions, id, 'DELETE');
+      return result;
+    });
   }
 
   // Delete all prescriptions
   Future<int> deleteAllPrescriptions() async {
     final db = await _databaseHelper.database;
-    return await db.delete(DatabaseConstants.tablePrescriptions);
+    return await db.transaction((txn) async {
+      final result = await txn.delete(DatabaseConstants.tablePrescriptions);
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tablePrescriptions, 'ALL', 'DELETE');
+      return result;
+    });
   }
 
   // Search prescriptions
@@ -197,34 +234,41 @@ class PrescriptionDataSource {
   // Batch insert prescriptions
   Future<void> batchInsertPrescriptions(List<Prescription> prescriptions) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final prescription in prescriptions) {
-      batch.insert(
-        DatabaseConstants.tablePrescriptions,
-        prescription.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (final prescription in prescriptions) {
+        await txn.insert(
+          DatabaseConstants.tablePrescriptions,
+          prescription.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tablePrescriptions, prescription.id, 'INSERT');
+      }
+    });
   }
 
   // Update multiple prescriptions
   Future<void> batchUpdatePrescriptions(List<Prescription> prescriptions) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final prescription in prescriptions) {
-      batch.update(
-        DatabaseConstants.tablePrescriptions,
-        prescription.toMap(),
-        where: '${DatabaseConstants.columnId} = ?',
-        whereArgs: [prescription.id],
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (var prescription in prescriptions) {
+        prescription = prescription.copyWith(
+          version: prescription.version + 1,
+          lastModified: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await txn.update(
+          DatabaseConstants.tablePrescriptions,
+          prescription.toMap(),
+          where: '${DatabaseConstants.columnId} = ?',
+          whereArgs: [prescription.id],
+        );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tablePrescriptions, prescription.id, 'UPDATE');
+      }
+    });
   }
 
   // Get prescriptions grouped by month

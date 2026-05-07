@@ -21,11 +21,15 @@ class MedicineDataSource {
     // Encrypt sensitive fields before storage
     final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
     
-    await db.insert(
-      DatabaseConstants.tableMedicines,
-      encryptedMap,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      await txn.insert(
+        DatabaseConstants.tableMedicines,
+        encryptedMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableMedicines, medicine.id, 'INSERT');
+    });
     return medicine.id;
   }
 
@@ -113,33 +117,54 @@ class MedicineDataSource {
   // Update medicine
   Future<int> updateMedicine(Medicine medicine) async {
     final db = await _databaseHelper.database;
-    final medicineMap = medicine.toMap();
+    // Bump version and update lastModified for updates
+    final updatedMedicine = medicine.copyWith(
+      version: medicine.version + 1,
+      lastModified: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    final medicineMap = updatedMedicine.toMap();
     
     // Encrypt sensitive fields before storage
     final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
     
-    return await db.update(
-      DatabaseConstants.tableMedicines,
-      encryptedMap,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [medicine.id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.update(
+        DatabaseConstants.tableMedicines,
+        encryptedMap,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [updatedMedicine.id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableMedicines, updatedMedicine.id, 'UPDATE');
+      return result;
+    });
   }
 
   // Delete medicine by ID
   Future<int> deleteMedicineById(String id) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tableMedicines,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tableMedicines,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableMedicines, id, 'DELETE');
+      return result;
+    });
   }
 
   // Delete all medicines
   Future<int> deleteAllMedicines() async {
     final db = await _databaseHelper.database;
-    return await db.delete(DatabaseConstants.tableMedicines);
+    return await db.transaction((txn) async {
+      final result = await txn.delete(DatabaseConstants.tableMedicines);
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableMedicines, 'ALL', 'DELETE');
+      return result;
+    });
   }
 
   // Search medicines by name
@@ -186,15 +211,37 @@ class MedicineDataSource {
   // Toggle medicine active status
   Future<int> toggleMedicineStatus(String id, bool isActive) async {
     final db = await _databaseHelper.database;
-    return await db.update(
-      DatabaseConstants.tableMedicines,
-      {
-        DatabaseConstants.columnMedicineIsActive: isActive ? 1 : 0,
-        DatabaseConstants.columnUpdatedAt: DateTime.now().toIso8601String(),
-      },
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      // First, get the current version to bump it
+      final maps = await txn.query(
+        DatabaseConstants.tableMedicines,
+        columns: [DatabaseConstants.columnVersion],
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      
+      int currentVersion = 1;
+      if (maps.isNotEmpty) {
+        currentVersion = (maps.first[DatabaseConstants.columnVersion] as int?) ?? 1;
+      }
+      
+      final result = await txn.update(
+        DatabaseConstants.tableMedicines,
+        {
+          DatabaseConstants.columnMedicineIsActive: isActive ? 1 : 0,
+          DatabaseConstants.columnUpdatedAt: DateTime.now().toIso8601String(),
+          DatabaseConstants.columnLastModified: DateTime.now().toIso8601String(),
+          DatabaseConstants.columnVersion: currentVersion + 1,
+        },
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableMedicines, id, 'UPDATE');
+      
+      return result;
+    });
   }
 
   // Get medicines that need reminders today
@@ -206,43 +253,53 @@ class MedicineDataSource {
   // Batch insert medicines
   Future<void> batchInsertMedicines(List<Medicine> medicines) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final medicine in medicines) {
-      final medicineMap = medicine.toMap();
-      
-      // Encrypt sensitive fields before storage
-      final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
-      
-      batch.insert(
-        DatabaseConstants.tableMedicines,
-        encryptedMap,
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (final medicine in medicines) {
+        final medicineMap = medicine.toMap();
+        
+        // Encrypt sensitive fields before storage
+        final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
+        
+        await txn.insert(
+          DatabaseConstants.tableMedicines,
+          encryptedMap,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableMedicines, medicine.id, 'INSERT');
+      }
+    });
   }
 
   // Update multiple medicines
   Future<void> batchUpdateMedicines(List<Medicine> medicines) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final medicine in medicines) {
-      final medicineMap = medicine.toMap();
-      
-      // Encrypt sensitive fields before storage
-      final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
-      
-      batch.update(
-        DatabaseConstants.tableMedicines,
-        encryptedMap,
-        where: '${DatabaseConstants.columnId} = ?',
-        whereArgs: [medicine.id],
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (var medicine in medicines) {
+        // Bump version and update lastModified for updates
+        medicine = medicine.copyWith(
+          version: medicine.version + 1,
+          lastModified: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final medicineMap = medicine.toMap();
+        
+        // Encrypt sensitive fields before storage
+        final encryptedMap = await _encryptionService.encryptMedicine(medicineMap);
+        
+        await txn.update(
+          DatabaseConstants.tableMedicines,
+          encryptedMap,
+          where: '${DatabaseConstants.columnId} = ?',
+          whereArgs: [medicine.id],
+        );
+        
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableMedicines, medicine.id, 'UPDATE');
+      }
+    });
   }
 }

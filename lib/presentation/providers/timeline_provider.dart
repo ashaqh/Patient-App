@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/timeline_repository_impl.dart';
 import '../../domain/entities/timeline_item.dart';
 import '../../domain/repositories/timeline_repository.dart';
+import 'database_change_monitor_provider.dart';
 import 'medicine_provider.dart'; // For databaseHelperProvider
 
 // Timeline repository provider
@@ -225,5 +226,17 @@ class TimelineListNotifier extends StateNotifier<TimelineListState> {
 // Timeline list provider
 final timelineListProvider = StateNotifierProvider<TimelineListNotifier, TimelineListState>((ref) {
   final timelineRepository = ref.watch(timelineRepositoryProvider);
-  return TimelineListNotifier(timelineRepository);
+  final notifier = TimelineListNotifier(timelineRepository);
+  
+  // Listen to database changes to refresh automatically
+    ref.listen(
+      databaseChangeMonitorProvider,
+      (previous, next) {
+        if (next != previous) {
+          notifier.refresh();
+        }
+      },
+    );
+  
+  return notifier;
 });

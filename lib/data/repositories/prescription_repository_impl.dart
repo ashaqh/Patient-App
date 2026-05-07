@@ -65,6 +65,11 @@ class PrescriptionRepositoryImpl implements PrescriptionRepository {
   }
 
   @override
+  Future<List<Prescription>> getPrescriptionsByDocumentType(String documentType) {
+    return _prescriptionDataSource.getAllPrescriptions(documentType: documentType);
+  }
+
+  @override
   Future<List<Prescription>> getPrescriptionsByFileType(String fileType) {
     return _prescriptionDataSource.getPrescriptionsByFileType(fileType);
   }

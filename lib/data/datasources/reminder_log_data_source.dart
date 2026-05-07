@@ -13,11 +13,15 @@ class ReminderLogDataSource {
   // Create a new reminder log
   Future<String> createReminderLog(ReminderLog reminderLog) async {
     final db = await _databaseHelper.database;
-    await db.insert(
-      DatabaseConstants.tableReminderLogs,
-      reminderLog.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      await txn.insert(
+        DatabaseConstants.tableReminderLogs,
+        reminderLog.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableReminderLogs, reminderLog.id, 'INSERT');
+    });
     return reminderLog.id;
   }
 
@@ -141,62 +145,107 @@ class ReminderLogDataSource {
   // Update reminder log
   Future<int> updateReminderLog(ReminderLog reminderLog) async {
     final db = await _databaseHelper.database;
-    return await db.update(
-      DatabaseConstants.tableReminderLogs,
-      reminderLog.toMap(),
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [reminderLog.id],
+    
+    final updatedLog = reminderLog.copyWith(
+      version: reminderLog.version + 1,
+      lastModified: DateTime.now(),
     );
+    
+    return await db.transaction((txn) async {
+      final result = await txn.update(
+        DatabaseConstants.tableReminderLogs,
+        updatedLog.toMap(),
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [updatedLog.id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableReminderLogs, updatedLog.id, 'UPDATE');
+      return result;
+    });
   }
 
   // Update reminder log status
   Future<int> updateReminderLogStatus(String id, ReminderStatus status, {String? notes}) async {
     final db = await _databaseHelper.database;
     
-    final updateData = <String, dynamic>{
-      DatabaseConstants.columnReminderStatus: status.dbValue,
-    };
-    
-    if (status == ReminderStatus.taken || status == ReminderStatus.skipped) {
-      updateData[DatabaseConstants.columnReminderActualTime] = DateTime.now().toIso8601String();
-    }
-    
-    if (notes != null) {
-      updateData[DatabaseConstants.columnReminderNotes] = notes;
-    }
-    
-    return await db.update(
-      DatabaseConstants.tableReminderLogs,
-      updateData,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      final maps = await txn.query(
+        DatabaseConstants.tableReminderLogs,
+        columns: [DatabaseConstants.columnVersion],
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      
+      int currentVersion = 1;
+      if (maps.isNotEmpty) {
+        currentVersion = (maps.first[DatabaseConstants.columnVersion] as int?) ?? 1;
+      }
+      
+      final updateData = <String, dynamic>{
+        DatabaseConstants.columnReminderStatus: status.dbValue,
+        DatabaseConstants.columnLastModified: DateTime.now().toIso8601String(),
+        DatabaseConstants.columnVersion: currentVersion + 1,
+      };
+      
+      if (status == ReminderStatus.taken || status == ReminderStatus.skipped) {
+        updateData[DatabaseConstants.columnReminderActualTime] = DateTime.now().toIso8601String();
+      }
+      
+      if (notes != null) {
+        updateData[DatabaseConstants.columnReminderNotes] = notes;
+      }
+      
+      final result = await txn.update(
+        DatabaseConstants.tableReminderLogs,
+        updateData,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableReminderLogs, id, 'UPDATE');
+      return result;
+    });
   }
 
   // Delete reminder log by ID
   Future<int> deleteReminderLogById(String id) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tableReminderLogs,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tableReminderLogs,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableReminderLogs, id, 'DELETE');
+      return result;
+    });
   }
 
   // Delete all reminder logs
   Future<int> deleteAllReminderLogs() async {
     final db = await _databaseHelper.database;
-    return await db.delete(DatabaseConstants.tableReminderLogs);
+    return await db.transaction((txn) async {
+      final result = await txn.delete(DatabaseConstants.tableReminderLogs);
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableReminderLogs, 'ALL', 'DELETE');
+      return result;
+    });
   }
 
   // Delete reminder logs by medicine ID
   Future<int> deleteReminderLogsByMedicineId(String medicineId) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tableReminderLogs,
-      where: '${DatabaseConstants.columnReminderMedicineId} = ?',
-      whereArgs: [medicineId],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tableReminderLogs,
+        where: '${DatabaseConstants.columnReminderMedicineId} = ?',
+        whereArgs: [medicineId],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableReminderLogs, 'MED_$medicineId', 'DELETE');
+      return result;
+    });
   }
 
   // Get reminder log count
@@ -340,34 +389,40 @@ class ReminderLogDataSource {
   // Batch insert reminder logs
   Future<void> batchInsertReminderLogs(List<ReminderLog> reminderLogs) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final log in reminderLogs) {
-      batch.insert(
-        DatabaseConstants.tableReminderLogs,
-        log.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (final log in reminderLogs) {
+        await txn.insert(
+          DatabaseConstants.tableReminderLogs,
+          log.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableReminderLogs, log.id, 'INSERT');
+      }
+    });
   }
 
   // Update multiple reminder logs
   Future<void> batchUpdateReminderLogs(List<ReminderLog> reminderLogs) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final log in reminderLogs) {
-      batch.update(
-        DatabaseConstants.tableReminderLogs,
-        log.toMap(),
-        where: '${DatabaseConstants.columnId} = ?',
-        whereArgs: [log.id],
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (var log in reminderLogs) {
+        log = log.copyWith(
+          version: log.version + 1,
+          lastModified: DateTime.now(),
+        );
+        await txn.update(
+          DatabaseConstants.tableReminderLogs,
+          log.toMap(),
+          where: '${DatabaseConstants.columnId} = ?',
+          whereArgs: [log.id],
+        );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableReminderLogs, log.id, 'UPDATE');
+      }
+    });
   }
 
   // Get reminder log statistics

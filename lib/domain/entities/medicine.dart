@@ -13,6 +13,8 @@ class Medicine {
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime lastModified;
+  final int version;
 
   Medicine({
     String? id,
@@ -27,9 +29,12 @@ class Medicine {
     this.isActive = true,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastModified,
+    this.version = 1,
   })  : id = id ?? Uuid().v4(),
         createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        updatedAt = updatedAt ?? DateTime.now(),
+        lastModified = lastModified ?? DateTime.now();
 
   // Create a copy of medicine with updated fields
   Medicine copyWith({
@@ -45,6 +50,8 @@ class Medicine {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastModified,
+    int? version,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -59,6 +66,8 @@ class Medicine {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      lastModified: lastModified ?? DateTime.now(),
+      version: version ?? this.version,
     );
   }
 
@@ -77,6 +86,8 @@ class Medicine {
       'is_active': isActive ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'last_modified': lastModified.toIso8601String(),
+      'version': version,
     };
   }
 
@@ -95,6 +106,10 @@ class Medicine {
       isActive: map['is_active'] == 1,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      lastModified: map['last_modified'] != null && map['last_modified'].toString().isNotEmpty 
+          ? DateTime.parse(map['last_modified']) 
+          : DateTime.now(),
+      version: map['version'] ?? 1,
     );
   }
 

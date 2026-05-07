@@ -1,20 +1,24 @@
 class DatabaseConstants {
-  // Database info
-  static const String databaseName = 'carevault.db';
-  static const int databaseVersion = 3;
-  
+// Database info
+static const String databaseName = 'carevault.db';
+static const int databaseVersion = 7;
+
   // Table names
   static const String tableMedicines = 'medicines';
   static const String tablePrescriptions = 'prescriptions';
+  static const String tableTestReports = 'test_reports';
   static const String tableReminderLogs = 'reminder_logs';
   static const String tableFollowUps = 'follow_ups';
   static const String tableVitalSigns = 'vital_signs';
   static const String tableAuditLogs = 'audit_logs';
+  static const String tableDatabaseChanges = 'database_changes';
   
   // Common column names
   static const String columnId = 'id';
   static const String columnCreatedAt = 'created_at';
   static const String columnUpdatedAt = 'updated_at';
+  static const String columnLastModified = 'last_modified';
+  static const String columnVersion = 'version';
   
   // Medicines table columns
   static const String columnMedicineName = 'name';
@@ -32,11 +36,23 @@ class DatabaseConstants {
   static const String columnPrescriptionFilePath = 'file_path';
   static const String columnPrescriptionFileName = 'file_name';
   static const String columnPrescriptionFileType = 'file_type';
+  static const String columnPrescriptionDocumentType = 'document_type';
   static const String columnPrescriptionDate = 'date';
   static const String columnPrescriptionNotes = 'notes';
   static const String columnPrescriptionDoctorName = 'doctor_name';
   static const String columnPrescriptionClinicName = 'clinic_name';
   static const String columnPrescriptionFileSize = 'file_size';
+
+  // Test reports table columns
+  static const String columnTestReportFilePath = 'file_path';
+  static const String columnTestReportFileName = 'file_name';
+  static const String columnTestReportFileType = 'file_type';
+  static const String columnTestReportType = 'report_type';
+  static const String columnTestReportTestName = 'test_name';
+  static const String columnTestReportLabName = 'lab_name';
+  static const String columnTestReportDoctorName = 'doctor_name';
+  static const String columnTestReportNotes = 'notes';
+  static const String columnTestReportFileSize = 'file_size';
   
   // Reminder logs table columns
   static const String columnReminderMedicineId = 'medicine_id';
@@ -88,6 +104,12 @@ class DatabaseConstants {
   static const String columnAuditLogSeverity = 'severity';
   static const String columnAuditLogSessionId = 'session_id';
   
+  // Database changes table columns
+  static const String columnChangeTableName = 'table_name';
+  static const String columnChangeRowId = 'row_id';
+  static const String columnChangeOperation = 'operation';
+  static const String columnChangeTimestamp = 'timestamp';
+  
   // Create table statements
   static String get createMedicinesTable => '''
     CREATE TABLE $tableMedicines (
@@ -102,25 +124,49 @@ class DatabaseConstants {
       $columnMedicineInstructions TEXT,
       $columnMedicineIsActive INTEGER NOT NULL DEFAULT 1,
       $columnCreatedAt TEXT NOT NULL,
-      $columnUpdatedAt TEXT NOT NULL
+      $columnUpdatedAt TEXT NOT NULL,
+      $columnLastModified TEXT NOT NULL DEFAULT '',
+      $columnVersion INTEGER NOT NULL DEFAULT 1
     )
   ''';
   
-  static String get createPrescriptionsTable => '''
-    CREATE TABLE $tablePrescriptions (
-      $columnId TEXT PRIMARY KEY,
-      $columnPrescriptionFilePath TEXT NOT NULL,
-      $columnPrescriptionFileName TEXT NOT NULL,
-      $columnPrescriptionFileType TEXT NOT NULL,
-      $columnPrescriptionDate TEXT NOT NULL,
-      $columnPrescriptionNotes TEXT,
-      $columnPrescriptionDoctorName TEXT,
-      $columnPrescriptionClinicName TEXT,
-      $columnPrescriptionFileSize REAL,
-      $columnCreatedAt TEXT NOT NULL,
-      $columnUpdatedAt TEXT NOT NULL
-    )
-  ''';
+static String get createPrescriptionsTable => '''
+CREATE TABLE $tablePrescriptions (
+$columnId TEXT PRIMARY KEY,
+$columnPrescriptionFilePath TEXT NOT NULL,
+$columnPrescriptionFileName TEXT NOT NULL,
+$columnPrescriptionFileType TEXT NOT NULL,
+$columnPrescriptionDocumentType TEXT NOT NULL DEFAULT 'prescription',
+$columnPrescriptionDate TEXT NOT NULL,
+$columnPrescriptionNotes TEXT,
+$columnPrescriptionDoctorName TEXT,
+$columnPrescriptionClinicName TEXT,
+$columnPrescriptionFileSize REAL,
+$columnCreatedAt TEXT NOT NULL,
+$columnUpdatedAt TEXT NOT NULL,
+$columnLastModified TEXT NOT NULL DEFAULT '',
+$columnVersion INTEGER NOT NULL DEFAULT 1
+)
+''';
+
+static String get createTestReportsTable => '''
+CREATE TABLE $tableTestReports (
+$columnId TEXT PRIMARY KEY,
+$columnTestReportFilePath TEXT NOT NULL,
+$columnTestReportFileName TEXT NOT NULL,
+$columnTestReportFileType TEXT NOT NULL,
+$columnTestReportType TEXT NOT NULL,
+$columnTestReportTestName TEXT,
+$columnTestReportLabName TEXT,
+$columnTestReportDoctorName TEXT,
+$columnTestReportNotes TEXT,
+$columnTestReportFileSize REAL,
+$columnCreatedAt TEXT NOT NULL,
+$columnUpdatedAt TEXT NOT NULL,
+$columnLastModified TEXT NOT NULL DEFAULT '',
+$columnVersion INTEGER NOT NULL DEFAULT 1
+)
+''';
   
   static String get createReminderLogsTable => '''
     CREATE TABLE $tableReminderLogs (
@@ -132,7 +178,9 @@ class DatabaseConstants {
       $columnReminderActualTime TEXT,
       $columnReminderStatus INTEGER NOT NULL,
       $columnReminderNotes TEXT,
-      $columnCreatedAt TEXT NOT NULL
+      $columnCreatedAt TEXT NOT NULL,
+      $columnLastModified TEXT NOT NULL DEFAULT '',
+      $columnVersion INTEGER NOT NULL DEFAULT 1
     )
   ''';
   
@@ -148,7 +196,9 @@ class DatabaseConstants {
       $columnFollowUpStatus INTEGER NOT NULL DEFAULT 0,
       $columnFollowUpCompletedAt TEXT,
       $columnCreatedAt TEXT NOT NULL,
-      $columnUpdatedAt TEXT NOT NULL
+      $columnUpdatedAt TEXT NOT NULL,
+      $columnLastModified TEXT NOT NULL DEFAULT '',
+      $columnVersion INTEGER NOT NULL DEFAULT 1
     )
   ''';
   
@@ -166,7 +216,9 @@ class DatabaseConstants {
       $columnVitalSignDeviceSource TEXT,
       $columnVitalSignIsManualEntry INTEGER NOT NULL DEFAULT 1,
       $columnCreatedAt TEXT NOT NULL,
-      $columnUpdatedAt TEXT NOT NULL
+      $columnUpdatedAt TEXT NOT NULL,
+      $columnLastModified TEXT NOT NULL DEFAULT '',
+      $columnVersion INTEGER NOT NULL DEFAULT 1
     )
   ''';
   
@@ -190,6 +242,16 @@ class DatabaseConstants {
       $columnAuditLogDetails TEXT,
       $columnAuditLogSeverity TEXT NOT NULL,
       $columnAuditLogSessionId TEXT NOT NULL
+    )
+  ''';
+  
+  static String get createDatabaseChangesTable => '''
+    CREATE TABLE $tableDatabaseChanges (
+      $columnId TEXT PRIMARY KEY,
+      $columnChangeTableName TEXT NOT NULL,
+      $columnChangeRowId TEXT NOT NULL,
+      $columnChangeOperation TEXT NOT NULL,
+      $columnChangeTimestamp TEXT NOT NULL
     )
   ''';
   
@@ -250,6 +312,18 @@ class DatabaseConstants {
     CREATE INDEX idx_audit_log_severity ON $tableAuditLogs($columnAuditLogSeverity)
   ''';
   
+static String get createChangeTimestampIndex => '''
+CREATE INDEX idx_change_timestamp ON $tableDatabaseChanges($columnChangeTimestamp)
+''';
+
+  static String get createTestReportDateIndex => '''
+CREATE INDEX idx_test_report_date ON $tableTestReports($columnCreatedAt)
+''';
+
+static String get createTestReportTypeIndex => '''
+CREATE INDEX idx_test_report_type ON $tableTestReports(report_type)
+''';
+  
   // Drop table statements (for migrations)
   static String get dropMedicinesTable => 'DROP TABLE IF EXISTS $tableMedicines';
   static String get dropPrescriptionsTable => 'DROP TABLE IF EXISTS $tablePrescriptions';
@@ -257,4 +331,5 @@ class DatabaseConstants {
   static String get dropFollowUpsTable => 'DROP TABLE IF EXISTS $tableFollowUps';
   static String get dropVitalSignsTable => 'DROP TABLE IF EXISTS $tableVitalSigns';
   static String get dropAuditLogsTable => 'DROP TABLE IF EXISTS $tableAuditLogs';
+  static String get dropDatabaseChangesTable => 'DROP TABLE IF EXISTS $tableDatabaseChanges';
 }

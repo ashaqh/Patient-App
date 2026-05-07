@@ -31,9 +31,12 @@ abstract class PrescriptionRepository {
   // Search prescriptions
   Future<List<Prescription>> searchPrescriptions(String query);
   
-  // Get prescription count
+// Get prescription count
   Future<int> getPrescriptionCount();
-  
+
+  // Get prescriptions by document type (prescription or test_report)
+  Future<List<Prescription>> getPrescriptionsByDocumentType(String documentType);
+
   // Get prescriptions by file type
   Future<List<Prescription>> getPrescriptionsByFileType(String fileType);
   

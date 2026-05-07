@@ -42,13 +42,6 @@ class MedicineListScreenNew extends ConsumerWidget {
                 },
                 tooltip: 'Search',
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.read(medicineListProvider.notifier).refresh();
-                },
-                tooltip: 'Refresh',
-              ),
             ],
           ),
 

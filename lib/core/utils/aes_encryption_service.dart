@@ -8,12 +8,13 @@ import '../utils/error_utils.dart';
 class AESEncryptionService {
   static const String _keyPrefix = 'aes_encryption_key_';
   static const String _ivPrefix = 'aes_encryption_iv_';
-  static const int _keyLength = 32; // 256 bits for AES
+  static const int _keyLength = 32; // 256 bits for AES-256
   static const int _ivLength = 16; // 128 bits for AES IV
-  
+
   final FlutterSecureStorage _secureStorage;
 
-  AESEncryptionService(this._secureStorage);
+  AESEncryptionService(FlutterSecureStorage secureStorage)
+      : _secureStorage = secureStorage;
 
   // Generate a random key for AES-256
   static String _generateRandomKey(int length) {

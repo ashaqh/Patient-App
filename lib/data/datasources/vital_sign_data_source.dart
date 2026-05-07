@@ -21,11 +21,15 @@ class VitalSignDataSource {
     // Encrypt sensitive fields before storage
     final encryptedMap = await _encryptionService.encryptVitalSign(vitalSignMap);
     
-    await db.insert(
-      DatabaseConstants.tableVitalSigns,
-      encryptedMap,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      await txn.insert(
+        DatabaseConstants.tableVitalSigns,
+        encryptedMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableVitalSigns, vitalSign.id, 'INSERT');
+    });
     return vitalSign.id;
   }
 
@@ -166,42 +170,68 @@ class VitalSignDataSource {
   // Update vital sign
   Future<int> updateVitalSign(VitalSign vitalSign) async {
     final db = await _databaseHelper.database;
-    final vitalSignMap = vitalSign.toMap();
+    
+    final updatedVitalSign = vitalSign.copyWith(
+      version: vitalSign.version + 1,
+      lastModified: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    final vitalSignMap = updatedVitalSign.toMap();
     
     final encryptedMap = await _encryptionService.encryptVitalSign(vitalSignMap);
     
-    return await db.update(
-      DatabaseConstants.tableVitalSigns,
-      encryptedMap,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [vitalSign.id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.update(
+        DatabaseConstants.tableVitalSigns,
+        encryptedMap,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [updatedVitalSign.id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableVitalSigns, updatedVitalSign.id, 'UPDATE');
+      return result;
+    });
   }
 
   // Delete vital sign by ID
   Future<int> deleteVitalSignById(String id) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tableVitalSigns,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tableVitalSigns,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableVitalSigns, id, 'DELETE');
+      return result;
+    });
   }
 
   // Delete all vital signs
   Future<int> deleteAllVitalSigns() async {
     final db = await _databaseHelper.database;
-    return await db.delete(DatabaseConstants.tableVitalSigns);
+    return await db.transaction((txn) async {
+      final result = await txn.delete(DatabaseConstants.tableVitalSigns);
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableVitalSigns, 'ALL', 'DELETE');
+      return result;
+    });
   }
 
   // Delete vital signs by type
   Future<int> deleteVitalSignsByType(VitalSignType type) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tableVitalSigns,
-      where: '${DatabaseConstants.columnVitalSignType} = ?',
-      whereArgs: [type.name],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tableVitalSigns,
+        where: '${DatabaseConstants.columnVitalSignType} = ?',
+        whereArgs: [type.name],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableVitalSigns, 'TYPE_${type.name}', 'DELETE');
+      return result;
+    });
   }
 
   // Get vital sign count
@@ -331,6 +361,8 @@ class VitalSignDataSource {
           encryptedMap,
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableVitalSigns, vitalSign.id, 'INSERT');
       }
     });
   }
@@ -340,7 +372,12 @@ class VitalSignDataSource {
     final db = await _databaseHelper.database;
     
     await db.transaction((txn) async {
-      for (final vitalSign in vitalSigns) {
+      for (var vitalSign in vitalSigns) {
+        vitalSign = vitalSign.copyWith(
+          version: vitalSign.version + 1,
+          lastModified: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
         final vitalSignMap = vitalSign.toMap();
         final encryptedMap = await _encryptionService.encryptVitalSign(vitalSignMap);
         
@@ -350,6 +387,8 @@ class VitalSignDataSource {
           where: '${DatabaseConstants.columnId} = ?',
           whereArgs: [vitalSign.id],
         );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableVitalSigns, vitalSign.id, 'UPDATE');
       }
     });
   }

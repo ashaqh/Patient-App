@@ -13,11 +13,15 @@ class FollowUpDataSource {
   // Create a new follow-up
   Future<String> createFollowUp(FollowUp followUp) async {
     final db = await _databaseHelper.database;
-    await db.insert(
-      DatabaseConstants.tableFollowUps,
-      followUp.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      await txn.insert(
+        DatabaseConstants.tableFollowUps,
+        followUp.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableFollowUps, followUp.id, 'INSERT');
+    });
     return followUp.id;
   }
 
@@ -172,33 +176,65 @@ class FollowUpDataSource {
   // Update follow-up
   Future<int> updateFollowUp(FollowUp followUp) async {
     final db = await _databaseHelper.database;
-    return await db.update(
-      DatabaseConstants.tableFollowUps,
-      followUp.toMap(),
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [followUp.id],
+    
+    final updatedFollowUp = followUp.copyWith(
+      version: followUp.version + 1,
+      lastModified: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
+    
+    return await db.transaction((txn) async {
+      final result = await txn.update(
+        DatabaseConstants.tableFollowUps,
+        updatedFollowUp.toMap(),
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [updatedFollowUp.id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableFollowUps, updatedFollowUp.id, 'UPDATE');
+      return result;
+    });
   }
 
   // Update follow-up status
   Future<int> updateFollowUpStatus(String id, FollowUpStatus status, {DateTime? completedAt}) async {
     final db = await _databaseHelper.database;
     
-    final updateData = <String, dynamic>{
-      DatabaseConstants.columnFollowUpStatus: status.dbValue,
-      DatabaseConstants.columnUpdatedAt: DateTime.now().toIso8601String(),
-    };
-    
-    if (status == FollowUpStatus.completed && completedAt != null) {
-      updateData[DatabaseConstants.columnFollowUpCompletedAt] = completedAt.toIso8601String();
-    }
-    
-    return await db.update(
-      DatabaseConstants.tableFollowUps,
-      updateData,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      // Get current version
+      final maps = await txn.query(
+        DatabaseConstants.tableFollowUps,
+        columns: [DatabaseConstants.columnVersion],
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      
+      int currentVersion = 1;
+      if (maps.isNotEmpty) {
+        currentVersion = (maps.first[DatabaseConstants.columnVersion] as int?) ?? 1;
+      }
+      
+      final updateData = <String, dynamic>{
+        DatabaseConstants.columnFollowUpStatus: status.dbValue,
+        DatabaseConstants.columnUpdatedAt: DateTime.now().toIso8601String(),
+        DatabaseConstants.columnLastModified: DateTime.now().toIso8601String(),
+        DatabaseConstants.columnVersion: currentVersion + 1,
+      };
+      
+      if (status == FollowUpStatus.completed && completedAt != null) {
+        updateData[DatabaseConstants.columnFollowUpCompletedAt] = completedAt.toIso8601String();
+      }
+      
+      final result = await txn.update(
+        DatabaseConstants.tableFollowUps,
+        updateData,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableFollowUps, id, 'UPDATE');
+      return result;
+    });
   }
 
   // Mark follow-up as completed
@@ -209,17 +245,27 @@ class FollowUpDataSource {
   // Delete follow-up by ID
   Future<int> deleteFollowUpById(String id) async {
     final db = await _databaseHelper.database;
-    return await db.delete(
-      DatabaseConstants.tableFollowUps,
-      where: '${DatabaseConstants.columnId} = ?',
-      whereArgs: [id],
-    );
+    return await db.transaction((txn) async {
+      final result = await txn.delete(
+        DatabaseConstants.tableFollowUps,
+        where: '${DatabaseConstants.columnId} = ?',
+        whereArgs: [id],
+      );
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableFollowUps, id, 'DELETE');
+      return result;
+    });
   }
 
   // Delete all follow-ups
   Future<int> deleteAllFollowUps() async {
     final db = await _databaseHelper.database;
-    return await db.delete(DatabaseConstants.tableFollowUps);
+    return await db.transaction((txn) async {
+      final result = await txn.delete(DatabaseConstants.tableFollowUps);
+      await _databaseHelper.recordChange(
+        txn, DatabaseConstants.tableFollowUps, 'ALL', 'DELETE');
+      return result;
+    });
   }
 
   // Search follow-ups
@@ -358,34 +404,41 @@ class FollowUpDataSource {
   // Batch insert follow-ups
   Future<void> batchInsertFollowUps(List<FollowUp> followUps) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final followUp in followUps) {
-      batch.insert(
-        DatabaseConstants.tableFollowUps,
-        followUp.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (final followUp in followUps) {
+        await txn.insert(
+          DatabaseConstants.tableFollowUps,
+          followUp.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableFollowUps, followUp.id, 'INSERT');
+      }
+    });
   }
 
   // Update multiple follow-ups
   Future<void> batchUpdateFollowUps(List<FollowUp> followUps) async {
     final db = await _databaseHelper.database;
-    final batch = db.batch();
     
-    for (final followUp in followUps) {
-      batch.update(
-        DatabaseConstants.tableFollowUps,
-        followUp.toMap(),
-        where: '${DatabaseConstants.columnId} = ?',
-        whereArgs: [followUp.id],
-      );
-    }
-    
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      for (var followUp in followUps) {
+        followUp = followUp.copyWith(
+          version: followUp.version + 1,
+          lastModified: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await txn.update(
+          DatabaseConstants.tableFollowUps,
+          followUp.toMap(),
+          where: '${DatabaseConstants.columnId} = ?',
+          whereArgs: [followUp.id],
+        );
+        await _databaseHelper.recordChange(
+          txn, DatabaseConstants.tableFollowUps, followUp.id, 'UPDATE');
+      }
+    });
   }
 
   // Get follow-up statistics

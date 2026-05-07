@@ -6,6 +6,8 @@ import '../../data/datasources/database_helper.dart';
 import '../../data/repositories/medicine_repository_impl.dart';
 import '../../domain/entities/medicine.dart';
 import '../../domain/repositories/medicine_repository.dart';
+import '../../data/datasources/database_constants.dart';
+import 'database_change_monitor_provider.dart';
 
 // Medicine filter enum
 enum MedicineFilter {
@@ -115,7 +117,14 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
   // Add new medicine
   Future<void> addMedicine(Medicine medicine) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      final previousMedicines = List<Medicine>.from(state.medicines);
+      state = state.copyWith(
+        medicines: [...state.medicines, medicine],
+        isLoading: true,
+        error: null,
+      );
+      
       await _medicineRepository.createMedicine(medicine);
       
       // Schedule reminders for the new medicine
@@ -123,9 +132,11 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
         await _reminderScheduler.scheduleMedicineReminders(medicine);
       }
       
-      await _loadMedicines(); // Reload the list
+      await _loadMedicines(); // Reload to get exact DB state (e.g. version)
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      // Revert on error
+      await _loadMedicines();
       rethrow;
     }
   }
@@ -133,7 +144,12 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
   // Update medicine
   Future<void> updateMedicine(Medicine medicine) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        medicines: state.medicines.map((m) => m.id == medicine.id ? medicine : m).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       // Get current medicine to check if active status changed
       final currentMedicine = await _medicineRepository.getMedicineById(medicine.id);
@@ -155,9 +171,10 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
         }
       }
       
-      await _loadMedicines(); // Reload the list
+      await _loadMedicines(); // Reload to ensure sync
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadMedicines();
       rethrow;
     }
   }
@@ -165,7 +182,12 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
   // Delete medicine
   Future<void> deleteMedicine(String id) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        medicines: state.medicines.where((m) => m.id != id).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       // Cancel reminders before deleting medicine
       await _reminderScheduler.notificationService.cancelMedicineReminders(id);
@@ -174,6 +196,7 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
       await _loadMedicines(); // Reload the list
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadMedicines();
       rethrow;
     }
   }
@@ -181,7 +204,12 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
   // Toggle medicine active status
   Future<void> toggleMedicineStatus(String id, bool isActive) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        medicines: state.medicines.map((m) => m.id == id ? m.copyWith(isActive: isActive) : m).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       // Get current medicine to check current status
       final medicine = await _medicineRepository.getMedicineById(id);
@@ -204,6 +232,7 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
       await _loadMedicines(); // Reload the list
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadMedicines();
       rethrow;
     }
   }
@@ -284,7 +313,20 @@ class MedicineListNotifier extends StateNotifier<MedicineListState> {
 final medicineListProvider = StateNotifierProvider<MedicineListNotifier, MedicineListState>((ref) {
   final medicineRepository = ref.watch(medicineRepositoryProvider);
   final reminderScheduler = ref.watch(reminderSchedulerProvider);
-  return MedicineListNotifier(medicineRepository, reminderScheduler);
+  final notifier = MedicineListNotifier(medicineRepository, reminderScheduler);
+  
+  // Listen for database changes for reactive updates
+  ref.listen(databaseChangesStreamProvider, (previous, next) {
+    if (next.hasValue) {
+      final changes = next.value!;
+      final hasMedicineChanges = changes.any((c) => c.tableName == DatabaseConstants.tableMedicines);
+      if (hasMedicineChanges) {
+        notifier.refresh();
+      }
+    }
+  });
+  
+  return notifier;
 });
 
 // Today's medicines provider

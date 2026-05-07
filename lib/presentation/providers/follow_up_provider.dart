@@ -5,6 +5,8 @@ import '../../core/utils/error_utils.dart';
 import '../../data/repositories/follow_up_repository_impl.dart';
 import '../../domain/entities/follow_up.dart';
 import '../../domain/repositories/follow_up_repository.dart';
+import '../../data/datasources/database_constants.dart';
+import 'database_change_monitor_provider.dart';
 import 'medicine_provider.dart'; // For databaseHelperProvider and reminderSchedulerProvider
 
 // Follow-up repository provider
@@ -77,7 +79,13 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
   // Add new follow-up
   Future<void> addFollowUp(FollowUp followUp) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        followUps: [...state.followUps, followUp],
+        isLoading: true,
+        error: null,
+      );
+      
       await _followUpRepository.createFollowUp(followUp);
       
       // Schedule reminder for the new follow-up
@@ -85,9 +93,10 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
         await _scheduleFollowUpReminder(followUp);
       }
       
-      await _loadFollowUps(); // Reload the list
+      await _loadFollowUps(); // Reload to sync exact DB state
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadFollowUps(); // Revert
       rethrow;
     }
   }
@@ -95,7 +104,12 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
   // Update follow-up
   Future<void> updateFollowUp(FollowUp followUp) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        followUps: state.followUps.map((f) => f.id == followUp.id ? followUp : f).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       // Get current follow-up to check if status changed
       final currentFollowUp = await _followUpRepository.getFollowUpById(followUp.id);
@@ -120,6 +134,7 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
       await _loadFollowUps(); // Reload the list
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadFollowUps(); // Revert
       rethrow;
     }
   }
@@ -127,7 +142,12 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
   // Delete follow-up
   Future<void> deleteFollowUp(String id) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        followUps: state.followUps.where((f) => f.id != id).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       // Cancel reminders before deleting follow-up
       await _reminderScheduler.notificationService.cancelFollowUpReminder(id);
@@ -136,6 +156,7 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
       await _loadFollowUps(); // Reload the list
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadFollowUps(); // Revert
       rethrow;
     }
   }
@@ -143,7 +164,12 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
   // Mark follow-up as completed
   Future<void> markAsCompleted(String id) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        followUps: state.followUps.map((f) => f.id == id ? f.copyWith(status: FollowUpStatus.completed, completedAt: DateTime.now()) : f).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       await _followUpRepository.markFollowUpAsCompleted(id);
       
@@ -153,6 +179,7 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
       await _loadFollowUps(); // Reload the list
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadFollowUps(); // Revert
       rethrow;
     }
   }
@@ -160,7 +187,12 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
   // Update follow-up status
   Future<void> updateStatus(String id, FollowUpStatus status, {DateTime? completedAt}) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        followUps: state.followUps.map((f) => f.id == id ? f.copyWith(status: status, completedAt: completedAt) : f).toList(),
+        isLoading: true,
+        error: null,
+      );
       
       await _followUpRepository.updateFollowUpStatus(id, status, completedAt: completedAt);
       
@@ -179,6 +211,7 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
       await _loadFollowUps(); // Reload the list
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
+      await _loadFollowUps(); // Revert
       rethrow;
     }
   }
@@ -301,7 +334,22 @@ class FollowUpListNotifier extends StateNotifier<FollowUpListState> {
 final followUpListProvider = StateNotifierProvider<FollowUpListNotifier, FollowUpListState>((ref) {
   final followUpRepository = ref.watch(followUpRepositoryProvider);
   final reminderScheduler = ref.watch(reminderSchedulerProvider);
-  return FollowUpListNotifier(followUpRepository, reminderScheduler);
+  final notifier = FollowUpListNotifier(followUpRepository, reminderScheduler);
+  
+  // Listen for database changes for reactive updates (both follow-ups and medicines for cross-entity sync)
+  ref.listen(databaseChangesStreamProvider, (previous, next) {
+    if (next.hasValue) {
+      final changes = next.value!;
+      final hasRelevantChanges = changes.any((c) => 
+          c.tableName == DatabaseConstants.tableFollowUps || 
+          c.tableName == DatabaseConstants.tableMedicines);
+      if (hasRelevantChanges) {
+        notifier.refresh();
+      }
+    }
+  });
+  
+  return notifier;
 });
 
 // Today's follow-ups provider

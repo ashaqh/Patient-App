@@ -82,6 +82,8 @@ class ReminderLog {
   final ReminderStatus status;
   final String? notes;
   final DateTime createdAt;
+  final DateTime lastModified;
+  final int version;
 
   ReminderLog({
     String? id,
@@ -93,8 +95,11 @@ class ReminderLog {
     required this.status,
     this.notes,
     DateTime? createdAt,
+    DateTime? lastModified,
+    this.version = 1,
   })  : id = id ?? Uuid().v4(),
-        createdAt = createdAt ?? DateTime.now();
+        createdAt = createdAt ?? DateTime.now(),
+        lastModified = lastModified ?? DateTime.now();
 
   // Create a copy of reminder log with updated fields
   ReminderLog copyWith({
@@ -107,6 +112,8 @@ class ReminderLog {
     ReminderStatus? status,
     String? notes,
     DateTime? createdAt,
+    DateTime? lastModified,
+    int? version,
   }) {
     return ReminderLog(
       id: id ?? this.id,
@@ -118,6 +125,8 @@ class ReminderLog {
       status: status ?? this.status,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      lastModified: lastModified ?? DateTime.now(),
+      version: version ?? this.version,
     );
   }
 
@@ -133,6 +142,8 @@ class ReminderLog {
       'status': status.dbValue,
       'notes': notes,
       'created_at': createdAt.toIso8601String(),
+      'last_modified': lastModified.toIso8601String(),
+      'version': version,
     };
   }
 
@@ -148,6 +159,10 @@ class ReminderLog {
       status: ReminderStatus.fromDbValue(map['status']),
       notes: map['notes'],
       createdAt: DateTime.parse(map['created_at']),
+      lastModified: map['last_modified'] != null && map['last_modified'].toString().isNotEmpty 
+          ? DateTime.parse(map['last_modified']) 
+          : DateTime.now(),
+      version: map['version'] ?? 1,
     );
   }
 

@@ -23,9 +23,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(vitalSignListProvider.notifier).refresh();
-    });
+    
   }
 
   @override
@@ -663,9 +661,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                 MaterialPageRoute(
                   builder: (context) => AddVitalSignScreen(vitalSign: vitalSign),
                 ),
-              ).then((_) {
-                ref.read(vitalSignListProvider.notifier).refresh();
-              });
+              );
             } else if (value == 'delete') {
               _showDeleteDialog(vitalSign);
             }
@@ -792,9 +788,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                 MaterialPageRoute(
                   builder: (context) => AddVitalSignScreen(vitalSign: vitalSign),
                 ),
-              ).then((_) {
-                ref.read(vitalSignListProvider.notifier).refresh();
-              });
+              );
             },
             child: const Text('Edit'),
           ),
@@ -863,9 +857,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                 MaterialPageRoute(
                   builder: (context) => const AddVitalSignScreen(),
                 ),
-              ).then((_) {
-                ref.read(vitalSignListProvider.notifier).refresh();
-              });
+              );
             },
             text: 'Add First Vital Sign',
             icon: Icons.add,
@@ -1136,14 +1128,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: AppTheme.onPrimaryColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.read(vitalSignListProvider.notifier).refresh();
-            },
-            tooltip: 'Refresh',
-          ),
-        ],
+],
       ),
       body: state.isLoading
           ? _buildLoadingState()
@@ -1173,9 +1158,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
             MaterialPageRoute(
               builder: (context) => const AddVitalSignScreen(),
             ),
-          ).then((_) {
-            ref.read(vitalSignListProvider.notifier).refresh();
-          });
+          );
         },
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: AppTheme.onPrimaryColor,

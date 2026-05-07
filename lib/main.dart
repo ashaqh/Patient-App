@@ -5,44 +5,78 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'core/services/notification_handler.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/reminder_scheduler.dart';
+import 'core/utils/error_utils.dart';
 import 'data/datasources/database_helper.dart';
 import 'presentation/providers/medicine_provider.dart';
 import 'presentation/screens/app.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize database
-  final databaseHelper = DatabaseHelper();
-  // Access the database to trigger initialization
-  await databaseHelper.database;
-  
-  // Initialize notification service
-  final notificationService = NotificationService();
-  await notificationService.initialize();
-  
-  // Request notification permissions (critical for Android 13+ and iOS)
-  await notificationService.requestNotificationPermissions();
-  
-  // Initialize reminder scheduler
-  final reminderScheduler = ReminderScheduler(databaseHelper);
-  await reminderScheduler.initialize();
-  
-  // Initialize notification handler
-  final notificationHandler = NotificationHandler(notificationService, reminderScheduler);
-  
-  // Wire up notification response callback to handler
-  NotificationService.onNotificationResponseCallback = notificationHandler.handleNotificationResponse;
-  
-  runApp(
-    ProviderScope(
-      overrides: [
-        // Provide initialized instances
-        databaseHelperProvider.overrideWithValue(databaseHelper),
-        reminderSchedulerProvider.overrideWithValue(reminderScheduler),
-      ],
-      child: App(notificationHandler: notificationHandler),
-    ),
-  );
+WidgetsFlutterBinding.ensureInitialized();
+
+try {
+// Initialize database with timeout
+final databaseHelper = DatabaseHelper();
+await Future.any([
+databaseHelper.database,
+Future.delayed(const Duration(seconds: 5), () => null),
+]);
+
+// Initialize notification service with timeout
+final notificationService = NotificationService();
+await Future.any([
+notificationService.initialize(),
+Future.delayed(const Duration(seconds: 3), () => null),
+]);
+
+    // Request notification permissions (non-blocking)
+    try {
+      await notificationService.requestNotificationPermissions().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          ErrorUtils.logInfo('Notification permission request timed out');
+          return Future.value(false);
+        },
+      );
+    } catch (e) {
+      ErrorUtils.logInfo('Failed to request notification permissions: $e');
+    }
+
+// Initialize reminder scheduler (non-blocking)
+final reminderScheduler = ReminderScheduler(databaseHelper);
+try {
+await reminderScheduler.initialize().timeout(
+const Duration(seconds: 3),
+onTimeout: () => ErrorUtils.logInfo('Reminder scheduler initialization timed out'),
+);
+} catch (e) {
+ErrorUtils.logInfo('Failed to initialize reminder scheduler: $e');
+}
+
+// Initialize notification handler
+final notificationHandler = NotificationHandler(notificationService, reminderScheduler);
+
+// Wire up notification response callback to handler
+NotificationService.onNotificationResponseCallback = notificationHandler.handleNotificationResponse;
+
+runApp(
+ProviderScope(
+overrides: [
+// Provide initialized instances
+databaseHelperProvider.overrideWithValue(databaseHelper),
+reminderSchedulerProvider.overrideWithValue(reminderScheduler),
+],
+child: App(notificationHandler: notificationHandler),
+),
+);
+} catch (e) {
+// If initialization fails, still run the app but without some features
+ErrorUtils.logError('Critical initialization error - running app in degraded mode', error: e);
+
+runApp(
+ProviderScope(
+child: App(notificationHandler: null),
+),
+);
+}
 }
 

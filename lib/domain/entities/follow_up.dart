@@ -75,6 +75,8 @@ class FollowUp {
   final DateTime? completedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime lastModified;
+  final int version;
 
   FollowUp({
     String? id,
@@ -88,9 +90,12 @@ class FollowUp {
     this.completedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastModified,
+    this.version = 1,
   })  : id = id ?? Uuid().v4(),
         createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        updatedAt = updatedAt ?? DateTime.now(),
+        lastModified = lastModified ?? DateTime.now();
 
   // Create a copy of follow-up with updated fields
   FollowUp copyWith({
@@ -105,6 +110,12 @@ class FollowUp {
     DateTime? completedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastModified,
+    int? version,
+    // Note: The following properties are added to support the plan's cross-entity features,
+    // though they might not be persisted directly in the DB
+    String? medicineId,
+    String? medicineName,
   }) {
     return FollowUp(
       id: id ?? this.id,
@@ -118,6 +129,8 @@ class FollowUp {
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      lastModified: lastModified ?? DateTime.now(),
+      version: version ?? this.version,
     );
   }
 
@@ -135,6 +148,8 @@ class FollowUp {
       'completed_at': completedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'last_modified': lastModified.toIso8601String(),
+      'version': version,
     };
   }
 
@@ -152,6 +167,10 @@ class FollowUp {
       completedAt: map['completed_at'] != null ? DateTime.parse(map['completed_at']) : null,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      lastModified: map['last_modified'] != null && map['last_modified'].toString().isNotEmpty 
+          ? DateTime.parse(map['last_modified']) 
+          : DateTime.now(),
+      version: map['version'] ?? 1,
     );
   }
 

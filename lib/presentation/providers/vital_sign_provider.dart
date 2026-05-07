@@ -5,6 +5,8 @@ import '../../data/datasources/database_helper.dart';
 import '../../data/repositories/vital_sign_repository_impl.dart';
 import '../../domain/entities/vital_sign.dart';
 import '../../domain/repositories/vital_sign_repository.dart';
+import '../../data/datasources/database_constants.dart';
+import 'database_change_monitor_provider.dart';
 import 'medicine_provider.dart'; // For databaseHelperProvider
 
 // Vital sign filter enum
@@ -131,11 +133,16 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
   // Create new vital sign
   Future<void> createVitalSign(VitalSign vitalSign) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        vitalSigns: [...state.vitalSigns, vitalSign],
+        isLoading: true,
+        error: null,
+      );
 
       await _vitalSignRepository.createVitalSign(vitalSign);
 
-      // Reload vital signs to get updated list
+      // Reload vital signs to get updated list and stats
       await _loadVitalSigns();
     } catch (e, stackTrace) {
       ErrorUtils.logError(
@@ -147,6 +154,7 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
         isLoading: false,
         error: 'Failed to create vital sign: ${e.toString()}',
       );
+      await _loadVitalSigns(); // Revert
       rethrow;
     }
   }
@@ -154,7 +162,12 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
   // Update vital sign
   Future<void> updateVitalSign(VitalSign vitalSign) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        vitalSigns: state.vitalSigns.map((vs) => vs.id == vitalSign.id ? vitalSign : vs).toList(),
+        isLoading: true,
+        error: null,
+      );
 
       await _vitalSignRepository.updateVitalSign(vitalSign);
 
@@ -170,6 +183,7 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
         isLoading: false,
         error: 'Failed to update vital sign: ${e.toString()}',
       );
+      await _loadVitalSigns(); // Revert
       rethrow;
     }
   }
@@ -177,34 +191,15 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
   // Delete vital sign
   Future<void> deleteVitalSign(String id) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Optimistic update
+      state = state.copyWith(
+        vitalSigns: state.vitalSigns.where((vs) => vs.id != id).toList(),
+        isLoading: true,
+        error: null,
+      );
 
       await _vitalSignRepository.deleteVitalSignById(id);
-
-      // Remove from local state
-      final updatedVitalSigns = state.vitalSigns
-          .where((vs) => vs.id != id)
-          .toList();
-
-      // Update latest readings
-      final updatedLatestReadings = Map<VitalSignType, VitalSign?>.from(
-        state.latestReadings,
-      );
-      for (final entry in updatedLatestReadings.entries) {
-        if (entry.value?.id == id) {
-          // Get new latest for this type
-          final latest = await _vitalSignRepository.getLatestVitalSignByType(
-            entry.key,
-          );
-          updatedLatestReadings[entry.key] = latest;
-        }
-      }
-
-      state = state.copyWith(
-        vitalSigns: updatedVitalSigns,
-        isLoading: false,
-        latestReadings: updatedLatestReadings,
-      );
+      await _loadVitalSigns();
     } catch (e, stackTrace) {
       ErrorUtils.logError(
         'Failed to delete vital sign',
@@ -215,6 +210,7 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
         isLoading: false,
         error: 'Failed to delete vital sign: ${e.toString()}',
       );
+      await _loadVitalSigns(); // Revert
       rethrow;
     }
   }
@@ -348,7 +344,20 @@ class VitalSignListNotifier extends StateNotifier<VitalSignListState> {
 final vitalSignListProvider =
     StateNotifierProvider<VitalSignListNotifier, VitalSignListState>((ref) {
       final repository = ref.watch(vitalSignRepositoryProvider);
-      return VitalSignListNotifier(repository);
+      final notifier = VitalSignListNotifier(repository);
+      
+      // Listen for database changes for reactive updates
+      ref.listen(databaseChangesStreamProvider, (previous, next) {
+        if (next.hasValue) {
+          final changes = next.value!;
+          final hasVitalSignChanges = changes.any((c) => c.tableName == DatabaseConstants.tableVitalSigns);
+          if (hasVitalSignChanges) {
+            notifier.refresh();
+          }
+        }
+      });
+      
+      return notifier;
     });
 
 // Today's vital signs provider
@@ -360,15 +369,6 @@ final todaysVitalSignsProvider = Provider<List<VitalSign>>((ref) {
 
 // Latest vital signs provider
 final latestVitalSignsProvider = Provider<Map<VitalSignType, VitalSign?>>((ref) {
-  ref.watch(vitalSignListProvider);
-  final state = ref.read(vitalSignListProvider);
-  return state.latestReadings;
-});
-
-// Latest vital signs provider
-final latestVitalSignsProvider = Provider<Map<VitalSignType, VitalSign?>>((
-  ref,
-) {
   final state = ref.watch(vitalSignListProvider);
   return state.latestReadings;
 });

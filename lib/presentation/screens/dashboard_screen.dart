@@ -28,19 +28,13 @@ class DashboardScreen extends ConsumerWidget {
             _buildAppBar(context),
             // Main content with better spacing
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(todaysMedicinesProvider);
-                  ref.invalidate(medicineListProvider);
-                },
-                child: _buildBody(
-                  context, 
-                  ref, 
-                  todaysMedicinesAsync, 
-                  medicineListState,
-                  todaysRemindersAsync,
-                  reminderStatisticsAsync,
-                ),
+              child: _buildBody(
+                context, 
+                ref, 
+                todaysMedicinesAsync, 
+                medicineListState,
+                todaysRemindersAsync,
+                reminderStatisticsAsync,
               ),
             ),
           ],

@@ -26,10 +26,7 @@ class _VitalSignsDashboardScreenState extends ConsumerState<VitalSignsDashboardS
   @override
   void initState() {
     super.initState();
-    // Refresh vital signs when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(vitalSignListProvider.notifier).refresh();
-    });
+
   }
 
   Widget _buildTypeSelector() {
@@ -446,14 +443,7 @@ Widget build(BuildContext context) {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: AppTheme.onPrimaryColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.read(vitalSignListProvider.notifier).refresh();
-            },
-            tooltip: 'Refresh',
-          ),
-        ],
+],
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())

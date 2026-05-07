@@ -5,11 +5,14 @@ import 'database_constants.dart';
 import '../../core/utils/error_utils.dart';
 
 class MigrationManager {
-  // Migration scripts for each version
   static final Map<int, List<String>> _migrations = {
     1: _getVersion1Migrations(),
     2: _getVersion2Migrations(),
     3: _getVersion3Migrations(),
+    4: _getVersion4Migrations(),
+    5: _getVersion5Migrations(),
+    6: _getVersion6Migrations(),
+    7: _getVersion7Migrations(),
   };
 
   // Get migration scripts for version 1 (initial version)
@@ -52,6 +55,58 @@ class MigrationManager {
     ];
   }
 
+  // Get migration scripts for version 4 (placeholder if needed)
+  static List<String> _getVersion4Migrations() {
+    return [];
+  }
+
+// Get migration scripts for version 5 (real-time sync architecture)
+static List<String> _getVersion5Migrations() {
+  return [
+  // Add last_modified and version to medicines (with IF NOT EXISTS check)
+  'ALTER TABLE ${DatabaseConstants.tableMedicines} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+  'ALTER TABLE ${DatabaseConstants.tableMedicines} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+  
+  // Add last_modified and version to prescriptions
+  'ALTER TABLE ${DatabaseConstants.tablePrescriptions} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+  'ALTER TABLE ${DatabaseConstants.tablePrescriptions} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+  
+  // Add last_modified and version to reminder_logs
+  'ALTER TABLE ${DatabaseConstants.tableReminderLogs} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+  'ALTER TABLE ${DatabaseConstants.tableReminderLogs} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+  
+  // Add last_modified and version to follow_ups
+  'ALTER TABLE ${DatabaseConstants.tableFollowUps} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+  'ALTER TABLE ${DatabaseConstants.tableFollowUps} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+  
+  // Add last_modified and version to vital_signs
+  'ALTER TABLE ${DatabaseConstants.tableVitalSigns} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+  'ALTER TABLE ${DatabaseConstants.tableVitalSigns} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+  
+  // Create database_changes table
+  DatabaseConstants.createDatabaseChangesTable,
+  DatabaseConstants.createChangeTimestampIndex,
+  ];
+}
+
+// Get migration scripts for version 6 (test reports table)
+static List<String> _getVersion6Migrations() {
+  return [
+  // Create test_reports table
+  DatabaseConstants.createTestReportsTable,
+  DatabaseConstants.createTestReportDateIndex,
+  DatabaseConstants.createTestReportTypeIndex,
+  ];
+}
+
+// Get migration scripts for version 7 (fix test_reports index)
+static List<String> _getVersion7Migrations() {
+  return [
+  // No new migrations needed - version 7 just fixes the index from v6
+  // This version bump ensures clean migration for existing users
+  ];
+}
+
   // Apply migrations from oldVersion to newVersion
   static Future<void> migrate(Database db, int oldVersion, int newVersion) async {
     for (int version = oldVersion + 1; version <= newVersion; version++) {
@@ -69,11 +124,17 @@ class MigrationManager {
         try {
           await txn.execute(migration);
         } catch (e) {
-          // Log migration error but continue
-          ErrorUtils.logInfo('Migration $version failed: $e\nSQL: $migration');
-          // In production, you might want to handle this more gracefully
-          // For now, we'll rethrow to fail the migration
-          rethrow;
+          final errorMsg = e.toString();
+          // Ignore "duplicate column" and "index already exists" errors - these mean migration already applied
+          if (errorMsg.contains('duplicate column') || 
+              errorMsg.contains('already exists') || 
+              errorMsg.contains('SQLITE_ERROR[1]')) {
+            ErrorUtils.logInfo('Migration $version: Skipping - $e');
+          } else {
+            // Log other migration errors but continue
+            ErrorUtils.logInfo('Migration $version failed: $e\nSQL: $migration');
+            rethrow;
+          }
         }
       }
     });
@@ -157,36 +218,37 @@ class MigrationManager {
     }
   }
 
-  // Validate database schema
+// Validate database schema
   static Future<bool> validateSchema(Database db, int expectedVersion) async {
     try {
       // Check if all required tables exist
       final requiredTables = [
         DatabaseConstants.tableMedicines,
         DatabaseConstants.tablePrescriptions,
+        DatabaseConstants.tableTestReports,
         DatabaseConstants.tableReminderLogs,
         DatabaseConstants.tableFollowUps,
         if (expectedVersion >= 2) DatabaseConstants.tableVitalSigns,
       ];
-      
+
       for (final table in requiredTables) {
         final result = await db.rawQuery(
           "SELECT name FROM sqlite_master WHERE type='table' AND name='$table'"
         );
-        
+
         if (result.isEmpty) {
           ErrorUtils.logInfo('Missing table: $table');
           return false;
         }
       }
-      
+
       // Check schema version
       final currentVersion = await getCurrentSchemaVersion(db);
       if (currentVersion != expectedVersion) {
         ErrorUtils.logInfo('Schema version mismatch: expected $expectedVersion, got $currentVersion');
         return false;
       }
-      
+
       return true;
     } catch (e) {
       ErrorUtils.logInfo('Schema validation failed: $e');

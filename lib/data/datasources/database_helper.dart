@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:uuid/uuid.dart';
 
 import 'database_constants.dart';
 import 'migration_manager.dart';
@@ -116,6 +117,7 @@ class DatabaseHelper {
     final db = await database;
     await db.delete(DatabaseConstants.tableMedicines);
     await db.delete(DatabaseConstants.tablePrescriptions);
+    await db.delete(DatabaseConstants.tableTestReports);
     await db.delete(DatabaseConstants.tableReminderLogs);
     await db.delete(DatabaseConstants.tableFollowUps);
     await db.delete(DatabaseConstants.tableVitalSigns);
@@ -211,5 +213,20 @@ class DatabaseHelper {
     } catch (e) {
       return false;
     }
+  }
+
+  // Record a database change in the database_changes table
+  Future<void> recordChange(
+      Transaction txn, String tableName, String rowId, String operation) async {
+    await txn.insert(
+      DatabaseConstants.tableDatabaseChanges,
+      {
+        DatabaseConstants.columnId: const Uuid().v4(),
+        DatabaseConstants.columnChangeTableName: tableName,
+        DatabaseConstants.columnChangeRowId: rowId,
+        DatabaseConstants.columnChangeOperation: operation,
+        DatabaseConstants.columnChangeTimestamp: DateTime.now().toIso8601String(),
+      },
+    );
   }
 }

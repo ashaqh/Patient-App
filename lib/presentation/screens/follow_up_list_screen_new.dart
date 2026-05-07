@@ -45,13 +45,6 @@ class FollowUpListScreenNew extends ConsumerWidget {
                 onPressed: () => _showFilterDialog(context, ref),
                 tooltip: 'Filter',
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.read(followUpListProvider.notifier).refresh();
-                },
-                tooltip: 'Refresh',
-              ),
             ],
           ),
 

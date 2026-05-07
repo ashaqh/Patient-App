@@ -77,20 +77,6 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                 },
                 tooltip: 'Search',
               ),
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.onPrimaryColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.refresh, size: 22),
-                ),
-                onPressed: () {
-                  ref.read(prescriptionListProvider.notifier).refresh();
-                },
-                tooltip: 'Refresh',
-              ),
             ],
           ),
 

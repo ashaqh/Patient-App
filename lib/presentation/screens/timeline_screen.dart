@@ -80,12 +80,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                     });
                   },
                 ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () {
-                    ref.read(timelineListProvider.notifier).refresh();
-                  },
-                ),
+                // Refresh button removed for reactive UI
               ],
             ),
 
@@ -611,11 +606,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
           ),
           const SizedBox(height: AppSpacing.l),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await ref.read(timelineListProvider.notifier).refresh();
-              },
-              child: ListView.builder(
+            child: ListView.builder(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                 itemCount: sortedGroups.length,
                 itemBuilder: (context, index) {
@@ -655,16 +646,11 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 },
               ),
             ),
-          ),
         ],
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await ref.read(timelineListProvider.notifier).refresh();
-      },
-      child: ListView.builder(
+    return ListView.builder(
         padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
         itemCount: sortedGroups.length,
         itemBuilder: (context, index) {
@@ -702,8 +688,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
             );
           }
         },
-      ),
-    );
+      );
   }
 
   Widget _buildDateGroup(BuildContext context, String dateKey, List<TimelineItem> items) {

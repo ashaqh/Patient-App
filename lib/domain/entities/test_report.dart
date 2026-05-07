@@ -1,73 +1,83 @@
 import 'package:uuid/uuid.dart';
 
-enum DocumentCategory {
-  prescription,
-  testReport,
+enum TestReportType {
+  bloodTest,
+  urineTest,
+  xray,
+  mri,
+  ctScan,
+  ultrasound,
+  ecg,
+  pathology,
+  other,
 }
 
-class Prescription {
+class TestReport {
   final String id;
   final String filePath;
   final String fileName;
   final String fileType;
-  final String documentType; // 'prescription' or 'test_report'
+  final String reportType;
   final DateTime date;
-  final String? notes;
+  final String? testName;
+  final String? labName;
   final String? doctorName;
-  final String? clinicName;
-  final double? fileSize; // in KB
+  final String? notes;
+  final double? fileSize;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime lastModified;
   final int version;
 
-  Prescription({
+  TestReport({
     String? id,
     required this.filePath,
     required this.fileName,
     required this.fileType,
-    this.documentType = 'prescription',
+    required this.reportType,
     required this.date,
-    this.notes,
+    this.testName,
+    this.labName,
     this.doctorName,
-    this.clinicName,
+    this.notes,
     this.fileSize,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastModified,
     this.version = 1,
-  }) : id = id ?? Uuid().v4(),
+  }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now(),
        lastModified = lastModified ?? DateTime.now();
 
-  // Create a copy of prescription with updated fields
-  Prescription copyWith({
+  TestReport copyWith({
     String? id,
     String? filePath,
     String? fileName,
     String? fileType,
-    String? documentType,
+    String? reportType,
     DateTime? date,
-    String? notes,
+    String? testName,
+    String? labName,
     String? doctorName,
-    String? clinicName,
+    String? notes,
     double? fileSize,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastModified,
     int? version,
   }) {
-    return Prescription(
+    return TestReport(
       id: id ?? this.id,
       filePath: filePath ?? this.filePath,
       fileName: fileName ?? this.fileName,
       fileType: fileType ?? this.fileType,
-      documentType: documentType ?? this.documentType,
+      reportType: reportType ?? this.reportType,
       date: date ?? this.date,
-      notes: notes ?? this.notes,
+      testName: testName ?? this.testName,
+      labName: labName ?? this.labName,
       doctorName: doctorName ?? this.doctorName,
-      clinicName: clinicName ?? this.clinicName,
+      notes: notes ?? this.notes,
       fileSize: fileSize ?? this.fileSize,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
@@ -76,18 +86,18 @@ class Prescription {
     );
   }
 
-  // Convert to map for database storage
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'file_path': filePath,
       'file_name': fileName,
       'file_type': fileType,
-      'document_type': documentType,
+      'report_type': reportType,
       'date': date.toIso8601String(),
-      'notes': notes,
+      'test_name': testName,
+      'lab_name': labName,
       'doctor_name': doctorName,
-      'clinic_name': clinicName,
+      'notes': notes,
       'file_size': fileSize,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -96,29 +106,28 @@ class Prescription {
     };
   }
 
-  // Create from map (from database)
-  factory Prescription.fromMap(Map<String, dynamic> map) {
-    return Prescription(
+  factory TestReport.fromMap(Map<String, dynamic> map) {
+    return TestReport(
       id: map['id'],
       filePath: map['file_path'],
       fileName: map['file_name'],
       fileType: map['file_type'],
-      documentType: map['document_type'] ?? 'prescription',
+      reportType: map['report_type'],
       date: DateTime.parse(map['date']),
-      notes: map['notes'],
+      testName: map['test_name'],
+      labName: map['lab_name'],
       doctorName: map['doctor_name'],
-      clinicName: map['clinic_name'],
+      notes: map['notes'],
       fileSize: map['file_size'] != null ? (map['file_size'] as num).toDouble() : null,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
       lastModified: map['last_modified'] != null && map['last_modified'].toString().isNotEmpty
-        ? DateTime.parse(map['last_modified'])
-        : DateTime.now(),
+          ? DateTime.parse(map['last_modified'])
+          : DateTime.now(),
       version: map['version'] ?? 1,
     );
   }
 
-  // Check if prescription is an image
   bool get isImage {
     final lowerType = fileType.toLowerCase();
     return lowerType.contains('jpg') ||
@@ -129,33 +138,66 @@ class Prescription {
         lowerType.contains('webp');
   }
 
-  // Check if prescription is a PDF
   bool get isPdf {
     return fileType.toLowerCase().contains('pdf');
   }
 
-  // Check if prescription is a document
-  bool get isDocument {
-    final lowerType = fileType.toLowerCase();
-    return lowerType.contains('doc') ||
-        lowerType.contains('docx') ||
-        lowerType.contains('txt') ||
-        lowerType.contains('rtf');
-  }
-
-  // Get file icon based on type
   String get fileIcon {
     if (isImage) return '📷';
     if (isPdf) return '📄';
-    if (isDocument) return '📝';
     return '📎';
   }
 
-  // Get display date in readable format
+  String get displayType {
+    switch (reportType) {
+      case 'blood_test':
+        return 'Blood Test';
+      case 'urine_test':
+        return 'Urine Test';
+      case 'xray':
+        return 'X-Ray';
+      case 'mri':
+        return 'MRI';
+      case 'ct_scan':
+        return 'CT Scan';
+      case 'ultrasound':
+        return 'Ultrasound';
+      case 'ecg':
+        return 'ECG';
+      case 'pathology':
+        return 'Pathology';
+      default:
+        return 'Other';
+    }
+  }
+
+  String get typeIcon {
+    switch (reportType) {
+      case 'blood_test':
+        return '🩸';
+      case 'urine_test':
+        return '💧';
+      case 'xray':
+        return '📷';
+      case 'mri':
+        return '🏥';
+      case 'ct_scan':
+        return '🏥';
+      case 'ultrasound':
+        return '🌊';
+      case 'ecg':
+        return '❤️';
+      case 'pathology':
+        return '🔬';
+      default:
+        return '📄';
+    }
+  }
+
   String get displayDate {
     final now = DateTime.now();
     final difference = now.difference(date).abs();
-    
+
     if (difference.inDays == 0) {
       return 'Today';
     } else if (difference.inDays == 1) {
@@ -173,34 +215,20 @@ class Prescription {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
-    return other is Prescription &&
+
+    return other is TestReport &&
         other.id == id &&
         other.filePath == filePath &&
-        other.fileName == fileName &&
-        other.fileType == fileType &&
-        other.date == date &&
-        other.notes == notes &&
-        other.doctorName == doctorName &&
-        other.clinicName == clinicName &&
-        other.fileSize == fileSize;
+        other.fileName == fileName;
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        filePath.hashCode ^
-        fileName.hashCode ^
-        fileType.hashCode ^
-        date.hashCode ^
-        notes.hashCode ^
-        doctorName.hashCode ^
-        clinicName.hashCode ^
-        fileSize.hashCode;
+    return id.hashCode ^ filePath.hashCode ^ fileName.hashCode;
   }
 
   @override
   String toString() {
-    return 'Prescription(id: $id, fileName: $fileName, fileType: $fileType, date: $date, doctorName: $doctorName)';
+    return 'TestReport(id: $id, fileName: $fileName, reportType: $reportType, date: $date)';
   }
 }

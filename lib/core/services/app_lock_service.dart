@@ -12,17 +12,17 @@ class AppLockService {
   static const String _biometricEnabledKey = 'app_lock_biometric_enabled';
   static const String _lockTimeoutKey = 'app_lock_timeout';
   static const String _lastUnlockTimeKey = 'app_last_unlock_time';
-  
+
   final FlutterSecureStorage _secureStorage;
   final AESEncryptionService _encryptionService;
   final LocalAuthService _localAuthService;
-  
+
   // Lock types
   static const String lockTypeNone = 'none';
   static const String lockTypePIN = 'pin';
   static const String lockTypePassword = 'password';
   static const String lockTypeBiometric = 'biometric';
-  
+
   // Timeout options (in minutes)
   static const Map<String, int> timeoutOptions = {
     'immediate': 0,
@@ -34,7 +34,7 @@ class AppLockService {
     '1_hour': 60,
     'never': -1,
   };
-  
+
   AppLockService()
       : _secureStorage = const FlutterSecureStorage(),
         _encryptionService = AESEncryptionService(const FlutterSecureStorage()),
@@ -43,7 +43,10 @@ class AppLockService {
   // Check if app lock is enabled
   Future<bool> isLockEnabled() async {
     try {
-      final enabled = await _secureStorage.read(key: _lockEnabledKey);
+      final enabled = await _secureStorage.read(key: _lockEnabledKey).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
       return enabled == 'true';
     } catch (e) {
       ErrorUtils.logError('Error checking lock enabled', error: e, tag: 'AppLock');

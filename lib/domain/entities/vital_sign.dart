@@ -158,6 +158,8 @@ class VitalSign {
   final bool isManualEntry;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime lastModified;
+  final int version;
 
   VitalSign({
     String? id,
@@ -173,10 +175,13 @@ class VitalSign {
     this.isManualEntry = true,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastModified,
+    this.version = 1,
   })  : id = id ?? Uuid().v4(),
         unit = unit ?? type.unit,
         createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        updatedAt = updatedAt ?? DateTime.now(),
+        lastModified = lastModified ?? DateTime.now();
 
   // Create a copy of vital sign with updated fields
   VitalSign copyWith({
@@ -193,6 +198,8 @@ class VitalSign {
     bool? isManualEntry,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastModified,
+    int? version,
   }) {
     return VitalSign(
       id: id ?? this.id,
@@ -208,6 +215,8 @@ class VitalSign {
       isManualEntry: isManualEntry ?? this.isManualEntry,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      lastModified: lastModified ?? DateTime.now(),
+      version: version ?? this.version,
     );
   }
 
@@ -227,6 +236,8 @@ class VitalSign {
       'is_manual_entry': isManualEntry ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'last_modified': lastModified.toIso8601String(),
+      'version': version,
     };
   }
 
@@ -254,6 +265,10 @@ class VitalSign {
       isManualEntry: map['is_manual_entry'] == 1,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      lastModified: map['last_modified'] != null && map['last_modified'].toString().isNotEmpty 
+          ? DateTime.parse(map['last_modified']) 
+          : DateTime.now(),
+      version: map['version'] ?? 1,
     );
   }
 
