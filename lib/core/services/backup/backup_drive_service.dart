@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:google_sign_in/google_sign_in.dart';
@@ -58,7 +59,10 @@ class GoogleSignInDriveClient implements GoogleDriveSignInClient {
   GoogleSignInDriveClient({GoogleSignIn? googleSignIn})
     : _googleSignIn =
           googleSignIn ??
-          GoogleSignIn(scopes: <String>[BackupDriveService.driveScope]);
+          GoogleSignIn(
+            scopes: <String>[BackupDriveService.driveScope],
+            serverClientId: BackupDriveService.webClientId,
+          );
 
   final GoogleSignIn _googleSignIn;
 
@@ -112,6 +116,9 @@ class BackupDriveService {
   static const String backupMimeType = 'application/vnd.carevault.backup';
   static const String backupNamePrefix = 'carevault-backup-';
   static const String driveScope = drive.DriveApi.driveAppdataScope;
+  static const int maxAppPropertyValueBytes = 124;
+  static const String webClientId =
+      '172630939110-5cjja5ff2h4ovfvaje9h5djcghifajcf.apps.googleusercontent.com';
 
   final GoogleDriveSignInClient _signInClient;
   drive.DriveApi? _driveApi;
@@ -316,14 +323,38 @@ class BackupDriveService {
       'id': metadata.id,
       'appVersion': metadata.appVersion,
       'backupTimestamp': metadata.backupTimestamp.toUtc().toIso8601String(),
-      'deviceInfo': metadata.deviceInfo,
+      'deviceInfo': _appPropertyValue(
+        metadata.deviceName ?? metadata.deviceInfo,
+      ),
       'schemaVersion': metadata.schemaVersion.toString(),
       'fileCount': metadata.fileCount.toString(),
       'encryptionVersion': metadata.encryptionVersion.toString(),
       'backupSize': metadata.backupSize.toString(),
-      if (metadata.deviceName != null) 'deviceName': metadata.deviceName!,
-      if (metadata.notes != null) 'notes': metadata.notes!,
+      if (metadata.deviceName != null)
+        'deviceName': _appPropertyValue(metadata.deviceName!),
+      if (metadata.notes != null) 'notes': _appPropertyValue(metadata.notes!),
     };
+  }
+
+  static Map<String, String> metadataPropertiesForTesting(
+    BackupMetadata metadata,
+  ) {
+    return _metadataProperties(metadata);
+  }
+
+  static String _appPropertyValue(String value) {
+    final bytes = utf8.encode(value);
+    if (bytes.length <= maxAppPropertyValueBytes) return value;
+
+    var end = value.length;
+    while (end > 0) {
+      final candidate = value.substring(0, end).trimRight();
+      if (utf8.encode(candidate).length <= maxAppPropertyValueBytes) {
+        return candidate;
+      }
+      end -= 1;
+    }
+    return '';
   }
 }
 

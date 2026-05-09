@@ -1,3 +1,4 @@
+import 'package:carevault/core/models/backup_metadata.dart';
 import 'package:carevault/core/services/backup/backup_drive_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -130,6 +131,30 @@ void main() {
 
       expect(account, isNull);
       expect(service.currentAccount, isNull);
+    });
+
+    test('Drive app properties stay within Drive value limits', () {
+      final metadata = BackupMetadata(
+        id: 'backup-1',
+        appVersion: '1.0.0',
+        backupTimestamp: DateTime.utc(2026, 5, 9, 8, 45),
+        deviceInfo: List.filled(500, 'Samsung Android device info').join(' '),
+        schemaVersion: 7,
+        fileCount: 3,
+        encryptionVersion: 1,
+        backupSize: 2048,
+        deviceName: List.filled(20, 'Samsung Galaxy').join(' '),
+        notes: List.filled(20, 'Manual backup note').join(' '),
+      );
+
+      final properties = BackupDriveService.metadataPropertiesForTesting(
+        metadata,
+      );
+
+      expect(
+        properties.values,
+        everyElement(hasLength(lessThanOrEqualTo(124))),
+      );
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -298,6 +299,24 @@ class BackupService {
   }
 
   String _friendlyBackupError(Object error) {
+    if (error is drive.DetailedApiRequestError) {
+      final rawMessage = error.message ?? '';
+      final message = rawMessage.toLowerCase();
+      if (message.contains('disabled') ||
+          message.contains('has not been used')) {
+        return 'Google Drive API is not enabled for this project.';
+      }
+      if (message.contains('insufficient') ||
+          message.contains('permission') ||
+          message.contains('scope')) {
+        return 'Google Drive permission is incomplete. Please disconnect and reconnect your account.';
+      }
+      if (rawMessage.isNotEmpty) {
+        return 'Google Drive upload failed: $rawMessage';
+      }
+      return 'Google Drive upload failed with status ${error.status}.';
+    }
+
     final message = error.toString().toLowerCase();
     if (message.contains('quota')) {
       return 'Google Drive storage quota was exceeded.';
