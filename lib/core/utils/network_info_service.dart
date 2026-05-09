@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart';
@@ -73,13 +74,13 @@ class NetworkInfoService {
     }
   }
   
-  Future<ConnectivityResult> getConnectivityStatus() async {
+Future<ConnectivityResult> getConnectivityStatus() async {
     if (!_isInitialized) {
       await initialize();
     }
     
     try {
-      return await _connectivity.checkConnectivity();
+      return (await _connectivity.checkConnectivity())[0]; // Get the first result
     } catch (e) {
       ErrorUtils.logError('Failed to get connectivity status: $e');
       return ConnectivityResult.none;
@@ -158,8 +159,10 @@ class NetworkInfoService {
     return true;
   }
   
-  Stream<ConnectivityResult> get onConnectivityChanged {
-    return _connectivity.onConnectivityChanged;
+Stream<ConnectivityResult> get onConnectivityChanged {
+    return _connectivity.onConnectivityChanged
+        .map((List<ConnectivityResult> list) => list[0]) // Map to first result
+        .cast<ConnectivityResult>(); // Cast to single ConnectivityResult
   }
   
   bool isInitialized() {

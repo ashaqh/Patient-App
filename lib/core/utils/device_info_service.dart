@@ -27,10 +27,10 @@ class DeviceInfoService {
         final windowsInfo = await _deviceInfoPlugin.windowsInfo;
         _cachedDeviceId = windowsInfo.deviceId;
         _cachedDeviceName = '${windowsInfo.computerName} (Windows)';
-      } else if (Platform.isMacOS) {
-        final macInfo = await _deviceInfoPlugin.macInfo;
+} else if (Platform.isMacOS) {
+        final macInfo = await _deviceInfoPlugin.macOsInfo;
         _cachedDeviceId = macInfo.systemGUID;
-        _cachedDeviceName = '${macInfo.model} (macOS)';
+        _cachedDeviceName = '${macInfo.computerName} (macOS)';
       } else if (Platform.isLinux) {
         final linuxInfo = await _deviceInfoPlugin.linuxInfo;
         _cachedDeviceId = linuxInfo.machineId;
@@ -103,18 +103,18 @@ class DeviceInfoService {
         deviceInfo['productName'] = windowsInfo.productName;
         deviceInfo['displayVersion'] = windowsInfo.displayVersion;
         deviceInfo['buildNumber'] = windowsInfo.buildNumber;
-      } else if (Platform.isMacOS) {
-        final macInfo = await _deviceInfoPlugin.macInfo;
-        deviceInfo['platform'] = 'macOS';
-        deviceInfo['computerName'] = macInfo.computerName;
-        deviceInfo['hostName'] = macInfo.hostName;
-        deviceInfo['arch'] = macInfo.arch;
-        deviceInfo['model'] = macInfo.model;
-        deviceInfo['kernelVersion'] = macInfo.kernelVersion;
-        deviceInfo['osRelease'] = macInfo.osRelease;
-        deviceInfo['activeCPUs'] = macInfo.activeCPUs;
-        deviceInfo['memorySize'] = macInfo.memorySize;
-        deviceInfo['cpuFrequency'] = macInfo.cpuFrequency;
+} else if (Platform.isMacOS) {
+      final macInfo = await _deviceInfoPlugin.macOsInfo;
+      deviceInfo['platform'] = 'macOS';
+      deviceInfo['computerName'] = macInfo.computerName;
+      deviceInfo['hostName'] = macInfo.hostName;
+      deviceInfo['arch'] = macInfo.arch;
+      deviceInfo['model'] = macInfo.model;
+      deviceInfo['kernelVersion'] = macInfo.kernelVersion;
+      deviceInfo['osRelease'] = macInfo.osRelease;
+      deviceInfo['activeCPUs'] = macInfo.activeCPUs;
+      deviceInfo['memorySize'] = macInfo.memorySize;
+      deviceInfo['cpuFrequency'] = macInfo.cpuFrequency;
       } else if (Platform.isLinux) {
         final linuxInfo = await _deviceInfoPlugin.linuxInfo;
         deviceInfo['platform'] = 'Linux';

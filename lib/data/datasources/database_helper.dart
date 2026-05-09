@@ -20,7 +20,7 @@ class DatabaseHelper {
   // Get database instance
   Future<Database> get database async {
     if (_database != null) return _database!;
-    
+
     _database = await _initDatabase();
     return _database!;
   }
@@ -29,7 +29,7 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, DatabaseConstants.databaseName);
-    
+
     return await openDatabase(
       path,
       version: DatabaseConstants.databaseVersion,
@@ -51,28 +51,68 @@ class DatabaseHelper {
     try {
       // Backup before migration
       final backupPath = await MigrationManager.backupDatabase(db);
-      ErrorUtils.logInfo('Database backup created at: $backupPath', tag: 'Database');
-      
+      if (backupPath != null) {
+        ErrorUtils.logInfo(
+          'Database backup created at: $backupPath',
+          tag: 'Database',
+        );
+      }
+
       // Apply migrations
       await MigrationManager.migrate(db, oldVersion, newVersion);
-      
+
       // Update schema version
       await MigrationManager.setCurrentSchemaVersion(db, newVersion);
-      
+
       // Record successful migration
-      await MigrationManager.recordMigration(db, oldVersion, newVersion, true, null);
-      
-      ErrorUtils.logInfo('Database migrated from version $oldVersion to $newVersion', tag: 'Database');
-    } catch (e, stackTrace) {
+      await MigrationManager.recordMigration(
+        db,
+        oldVersion,
+        newVersion,
+        true,
+        null,
+      );
+
+      ErrorUtils.logInfo(
+        'Database migrated from version $oldVersion to $newVersion',
+        tag: 'Database',
+      );
+    } on Exception catch (e, stackTrace) {
       // Record failed migration
-      await MigrationManager.recordMigration(db, oldVersion, newVersion, false, e.toString());
-      
+      await MigrationManager.recordMigration(
+        db,
+        oldVersion,
+        newVersion,
+        false,
+        e.toString(),
+      );
+
       ErrorUtils.logError(
         'Database migration failed from version $oldVersion to $newVersion',
         error: e,
         stackTrace: stackTrace,
         tag: 'Database',
       );
+
+      // Re-throw the error to ensure the app handles it properly
+      rethrow;
+    } catch (e, stackTrace) {
+      // Record failed migration for unexpected errors
+      await MigrationManager.recordMigration(
+        db,
+        oldVersion,
+        newVersion,
+        false,
+        e.toString(),
+      );
+
+      ErrorUtils.logError(
+        'Unexpected error during database migration from version $oldVersion to $newVersion',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'Database',
+      );
+
       rethrow;
     }
   }
@@ -80,20 +120,44 @@ class DatabaseHelper {
   // Handle database downgrades (should rarely happen)
   Future<void> _onDowngrade(Database db, int oldVersion, int newVersion) async {
     try {
-      ErrorUtils.logWarning('Database downgrade requested from $oldVersion to $newVersion', tag: 'Database');
-      
+      ErrorUtils.logWarning(
+        'Database downgrade requested from $oldVersion to $newVersion',
+        tag: 'Database',
+      );
+
       // Attempt rollback
       final success = await MigrationManager.rollbackMigration(db, newVersion);
-      
+
       if (success) {
-        await MigrationManager.recordMigration(db, oldVersion, newVersion, true, 'Downgrade successful');
-        ErrorUtils.logInfo('Database downgraded from version $oldVersion to $newVersion', tag: 'Database');
+        await MigrationManager.recordMigration(
+          db,
+          oldVersion,
+          newVersion,
+          true,
+          'Downgrade successful',
+        );
+        ErrorUtils.logInfo(
+          'Database downgraded from version $oldVersion to $newVersion',
+          tag: 'Database',
+        );
       } else {
-        await MigrationManager.recordMigration(db, oldVersion, newVersion, false, 'Downgrade failed');
+        await MigrationManager.recordMigration(
+          db,
+          oldVersion,
+          newVersion,
+          false,
+          'Downgrade failed',
+        );
         throw Exception('Database downgrade failed');
       }
     } catch (e, stackTrace) {
-      await MigrationManager.recordMigration(db, oldVersion, newVersion, false, e.toString());
+      await MigrationManager.recordMigration(
+        db,
+        oldVersion,
+        newVersion,
+        false,
+        e.toString(),
+      );
       ErrorUtils.logError(
         'Database downgrade failed from version $oldVersion to $newVersion',
         error: e,
@@ -126,13 +190,13 @@ class DatabaseHelper {
   // Drop and recreate database (for testing)
   Future<void> resetDatabase() async {
     await close();
-    
+
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, DatabaseConstants.databaseName);
-    
+
     // Delete existing database file
     await deleteDatabase(path);
-    
+
     // Reinitialize database
     _database = await _initDatabase();
   }
@@ -140,27 +204,47 @@ class DatabaseHelper {
   // Get database statistics
   Future<Map<String, int>> getDatabaseStats() async {
     final db = await database;
-    
-    final medicinesCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tableMedicines}')
-    ) ?? 0;
-    
-    final prescriptionsCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tablePrescriptions}')
-    ) ?? 0;
-    
-    final reminderLogsCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tableReminderLogs}')
-    ) ?? 0;
-    
-    final followUpsCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tableFollowUps}')
-    ) ?? 0;
-    
-    final vitalSignsCount = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseConstants.tableVitalSigns}')
-    ) ?? 0;
-    
+
+    final medicinesCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM ${DatabaseConstants.tableMedicines}',
+          ),
+        ) ??
+        0;
+
+    final prescriptionsCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM ${DatabaseConstants.tablePrescriptions}',
+          ),
+        ) ??
+        0;
+
+    final reminderLogsCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM ${DatabaseConstants.tableReminderLogs}',
+          ),
+        ) ??
+        0;
+
+    final followUpsCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM ${DatabaseConstants.tableFollowUps}',
+          ),
+        ) ??
+        0;
+
+    final vitalSignsCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM ${DatabaseConstants.tableVitalSigns}',
+          ),
+        ) ??
+        0;
+
     return {
       'medicines': medicinesCount,
       'prescriptions': prescriptionsCount,
@@ -182,7 +266,7 @@ class DatabaseHelper {
       final databasesPath = await getDatabasesPath();
       final sourcePath = join(databasesPath, DatabaseConstants.databaseName);
       final backupPath = '$sourcePath.backup';
-      
+
       // Copy database file
       // Note: This is a simplified implementation
       // In a real app, you would use proper file copying
@@ -196,17 +280,17 @@ class DatabaseHelper {
   Future<bool> restoreDatabase(String backupPath) async {
     try {
       await close();
-      
+
       final databasesPath = await getDatabasesPath();
       final currentPath = join(databasesPath, DatabaseConstants.databaseName);
-      
+
       // Delete current database
       await deleteDatabase(currentPath);
-      
+
       // Copy backup to current location
       // Note: This is a simplified implementation
       // In a real app, you would use proper file copying
-      
+
       // Reinitialize database
       _database = await _initDatabase();
       return true;
@@ -217,16 +301,17 @@ class DatabaseHelper {
 
   // Record a database change in the database_changes table
   Future<void> recordChange(
-      Transaction txn, String tableName, String rowId, String operation) async {
-    await txn.insert(
-      DatabaseConstants.tableDatabaseChanges,
-      {
-        DatabaseConstants.columnId: const Uuid().v4(),
-        DatabaseConstants.columnChangeTableName: tableName,
-        DatabaseConstants.columnChangeRowId: rowId,
-        DatabaseConstants.columnChangeOperation: operation,
-        DatabaseConstants.columnChangeTimestamp: DateTime.now().toIso8601String(),
-      },
-    );
+    Transaction txn,
+    String tableName,
+    String rowId,
+    String operation,
+  ) async {
+    await txn.insert(DatabaseConstants.tableDatabaseChanges, {
+      DatabaseConstants.columnId: const Uuid().v4(),
+      DatabaseConstants.columnChangeTableName: tableName,
+      DatabaseConstants.columnChangeRowId: rowId,
+      DatabaseConstants.columnChangeOperation: operation,
+      DatabaseConstants.columnChangeTimestamp: DateTime.now().toIso8601String(),
+    });
   }
 }

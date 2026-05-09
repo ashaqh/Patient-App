@@ -340,6 +340,8 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       }
     }
 
+    final warning = _getWarningMessage();
+
     try {
       final vitalSign = VitalSign(
         type: _selectedType,
@@ -363,13 +365,13 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
           vitalSign.copyWith(id: widget.vitalSign!.id),
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vital sign updated successfully')),
+          SnackBar(content: Text(warning ?? 'Vital sign updated successfully')),
         );
       } else {
         // Create new vital sign
         await notifier.createVitalSign(vitalSign);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vital sign recorded successfully')),
+          SnackBar(content: Text(warning ?? 'Vital sign recorded successfully')),
         );
       }
 
@@ -382,6 +384,20 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
         ),
       );
     }
+  }
+
+  String? _getWarningMessage() {
+    if (_selectedType == VitalSignType.bloodPressure) {
+      return VitalSignValidation.getBloodPressureWarning(
+        _value1Controller.text,
+        _value2Controller.text,
+      );
+    }
+
+    return VitalSignValidation.getVitalSignWarning(
+      _value1Controller.text,
+      _selectedType,
+    );
   }
 
   @override

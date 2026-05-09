@@ -5,6 +5,8 @@ import 'notification_service.dart';
 import 'reminder_scheduler.dart';
 
 class NotificationHandler {
+  static void Function()? onReminderChanged;
+
   final NotificationService _notificationService;
   final ReminderScheduler _reminderScheduler;
 
@@ -88,10 +90,12 @@ class NotificationHandler {
         break;
       default:
         ErrorUtils.logInfo('Unknown action: $actionId');
+        return;
     }
 
     // Cancel the original notification
     await _notificationService.cancelReminder(medicineId, scheduledTime);
+    onReminderChanged?.call();
   }
 
   // Handle medicine notification tap (user tapped notification body)
@@ -112,6 +116,7 @@ class NotificationHandler {
     
     // Cancel the notification
     await _notificationService.cancelReminder(medicineId, scheduledTime);
+    onReminderChanged?.call();
   }
 
   // Handle follow-up notification tap

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/constants/spacing_constants.dart';
 import '../../core/utils/date_time_utils.dart';
+import '../../core/utils/medicine_dashboard_status.dart';
 import '../../domain/entities/medicine.dart';
+import '../../domain/entities/reminder_log.dart';
 import '../../domain/entities/vital_sign.dart';
 import '../providers/medicine_provider.dart';
 import '../providers/reminder_provider.dart';
@@ -13,16 +15,18 @@ import 'add_medicine_screen.dart';
 import 'add_prescription_screen.dart';
 import 'add_follow_up_screen_new.dart';
 import 'add_vital_sign_screen.dart';
+import 'backup_settings_screen.dart';
 import 'timeline_screen.dart';
 import 'vital_sign_list_screen.dart';
 
 class DashboardScreenNew extends ConsumerWidget {
   const DashboardScreenNew({super.key});
 
-@override
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todaysMedicinesAsync = ref.watch(todaysMedicinesProvider);
     final medicineListState = ref.watch(medicineListProvider);
+    final todaysRemindersAsync = ref.watch(todaysRemindersProvider);
     final reminderStatisticsAsync = ref.watch(reminderStatisticsProvider);
     final todaysVitalSignsAsync = ref.watch(todaysVitalSignsProvider);
     final latestVitalSignsAsync = ref.watch(latestVitalSignsProvider);
@@ -40,6 +44,20 @@ class DashboardScreenNew extends ConsumerWidget {
             expandedHeight: 140,
             floating: false,
             pinned: true,
+            actions: [
+              IconButton(
+                tooltip: 'Backup & Restore',
+                icon: const Icon(Icons.cloud_sync_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const BackupSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
               title: Column(
@@ -80,9 +98,10 @@ class DashboardScreenNew extends ConsumerWidget {
 
                 // Today's Medicines
                 _buildTodaysMedicinesSection(
-                  context, 
-                  ref, 
-                  todaysMedicinesAsync, 
+                  context,
+                  ref,
+                  todaysMedicinesAsync,
+                  todaysRemindersAsync,
                   medicineListState,
                 ),
                 const SizedBox(height: AppSpacing.l),
@@ -109,9 +128,7 @@ class DashboardScreenNew extends ConsumerWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AddMedicineScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddMedicineScreen()),
           );
         },
         backgroundColor: AppTheme.primaryColor,
@@ -147,9 +164,9 @@ class DashboardScreenNew extends ConsumerWidget {
         children: [
           Text(
             '$greeting,',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -162,9 +179,9 @@ class DashboardScreenNew extends ConsumerWidget {
           const SizedBox(height: AppSpacing.s),
           Text(
             formattedDate,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -178,13 +195,18 @@ class DashboardScreenNew extends ConsumerWidget {
     return 'Good evening';
   }
 
-  Widget _buildStatisticsSection(BuildContext context, AsyncValue<Map<String, int>> statisticsAsync) {
+  Widget _buildStatisticsSection(
+    BuildContext context,
+    AsyncValue<Map<String, int>> statisticsAsync,
+  ) {
     return statisticsAsync.when(
       data: (statistics) {
         final total = statistics['total'] ?? 0;
         final taken = statistics['taken'] ?? 0;
         final pending = statistics['pending'] ?? 0;
-        final adherenceRate = total > 0 ? ((taken + (statistics['skipped'] ?? 0)) * 100 / total).round() : 0;
+        final adherenceRate = total > 0
+            ? ((taken + (statistics['skipped'] ?? 0)) * 100 / total).round()
+            : 0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +226,7 @@ class DashboardScreenNew extends ConsumerWidget {
               mainAxisSpacing: AppSpacing.s,
               crossAxisSpacing: AppSpacing.s,
               children: [
-_buildStatCard(
+                _buildStatCard(
                   context,
                   'Total Reminders',
                   total.toString(),
@@ -230,7 +252,9 @@ _buildStatCard(
                   'Adherence',
                   '$adherenceRate%',
                   Icons.trending_up,
-                  adherenceRate >= 80 ? AppTheme.primaryColor : AppTheme.tertiaryColor,
+                  adherenceRate >= 80
+                      ? AppTheme.primaryColor
+                      : AppTheme.tertiaryColor,
                 ),
               ],
             ),
@@ -242,7 +266,13 @@ _buildStatCard(
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
@@ -289,6 +319,7 @@ _buildStatCard(
     BuildContext context,
     WidgetRef ref,
     AsyncValue<List<Medicine>> todaysMedicinesAsync,
+    AsyncValue<List<ReminderLog>> todaysRemindersAsync,
     MedicineListState medicineListState,
   ) {
     return todaysMedicinesAsync.when(
@@ -327,7 +358,11 @@ _buildStatCard(
               ],
             ),
             const SizedBox(height: AppSpacing.m),
-            ...medicines.take(3).map((medicine) => _buildMedicineCard(context, medicine)).toList(),
+            ...medicines.take(3).map((medicine) {
+              final reminders =
+                  todaysRemindersAsync.value ?? const <ReminderLog>[];
+              return _buildMedicineCard(context, medicine, reminders);
+            }).toList(),
             if (medicines.length > 3)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.m),
@@ -348,19 +383,22 @@ _buildStatCard(
     );
   }
 
-  Widget _buildMedicineCard(BuildContext context, Medicine medicine) {
+  Widget _buildMedicineCard(
+    BuildContext context,
+    Medicine medicine,
+    List<ReminderLog> reminders,
+  ) {
     final nextTime = medicine.times.isNotEmpty ? medicine.times.first : '';
-    
+    final status = MedicineDashboardStatus.forMedicine(medicine, reminders);
+    final statusColor = _getReminderStatusColor(status.reminder?.status);
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        border: Border.all(
-          width: 1,
-          color: AppTheme.outlineVariant,
-        ),
+        border: Border.all(width: 1, color: AppTheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -400,19 +438,19 @@ _buildStatCard(
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.xs,
+            ),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                width: 1,
-                color: AppTheme.primaryColor,
-              ),
+              border: Border.all(width: 1, color: statusColor),
             ),
             child: Text(
-              'Pending',
+              status.label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppTheme.primaryColor,
+                color: statusColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -420,6 +458,22 @@ _buildStatCard(
         ],
       ),
     );
+  }
+
+  Color _getReminderStatusColor(ReminderStatus? status) {
+    switch (status) {
+      case ReminderStatus.taken:
+        return AppTheme.primaryColor;
+      case ReminderStatus.skipped:
+        return AppTheme.neutralColor;
+      case ReminderStatus.missed:
+        return AppTheme.errorColor;
+      case ReminderStatus.snoozed:
+        return AppTheme.tertiaryColor;
+      case ReminderStatus.pending:
+      case null:
+        return AppTheme.primaryColor;
+    }
   }
 
   Widget _buildTodaysVitalSignsSection(
@@ -430,7 +484,7 @@ _buildStatCard(
     List<VitalSign> abnormalVitalSigns,
   ) {
     final hasAbnormalReadings = abnormalVitalSigns.isNotEmpty;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -454,15 +508,15 @@ _buildStatCard(
               },
               child: Text(
                 'View All',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppTheme.primaryColor,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: AppTheme.primaryColor),
               ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.m),
-        
+
         // Warning banner for abnormal readings
         if (hasAbnormalReadings)
           Container(
@@ -470,19 +524,14 @@ _buildStatCard(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
               color: AppTheme.errorContainer,
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-              border: Border.all(
-                width: 1,
-                color: AppTheme.errorColor,
+              borderRadius: BorderRadius.circular(
+                AppSpacing.borderRadiusMedium,
               ),
+              border: Border.all(width: 1, color: AppTheme.errorColor),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.warning,
-                  color: AppTheme.errorColor,
-                  size: 24,
-                ),
+                Icon(Icons.warning, color: AppTheme.errorColor, size: 24),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
                   child: Column(
@@ -520,8 +569,8 @@ _buildStatCard(
                               child: Text(
                                 '• ${vs.type.displayName}: ${vs.displayValue}',
                                 style: TextStyle(
-                                  color: vs.isWithinTargetRange 
-                                      ? Colors.green 
+                                  color: vs.isWithinTargetRange
+                                      ? Colors.green
                                       : Colors.red,
                                 ),
                               ),
@@ -548,7 +597,7 @@ _buildStatCard(
               ],
             ),
           ),
-        
+
         // Latest readings grid
         GridView.count(
           crossAxisCount: 2,
@@ -562,7 +611,7 @@ _buildStatCard(
             final todayReadings = todaysVitalSigns
                 .where((vs) => vs.type == type)
                 .toList();
-            
+
             return _buildVitalSignCard(
               context,
               type: type,
@@ -571,7 +620,7 @@ _buildStatCard(
             );
           }).toList(),
         ),
-        
+
         // Add vital sign button
         if (todaysVitalSigns.isEmpty)
           Container(
@@ -579,11 +628,10 @@ _buildStatCard(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-              border: Border.all(
-                width: 1,
-                color: AppTheme.outlineVariant,
+              borderRadius: BorderRadius.circular(
+                AppSpacing.borderRadiusMedium,
               ),
+              border: Border.all(width: 1, color: AppTheme.outlineVariant),
             ),
             child: Column(
               children: [
@@ -634,16 +682,14 @@ _buildStatCard(
   }) {
     final hasReading = latestReading != null;
     final isAbnormal = hasReading && !latestReading!.isWithinTargetRange;
-    
+
     return GestureDetector(
       onTap: () {
         if (hasReading) {
           // Show details or navigate to add new reading
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AddVitalSignScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddVitalSignScreen()),
           );
         }
       },
@@ -670,10 +716,7 @@ _buildStatCard(
           children: [
             Row(
               children: [
-                Text(
-                  type.icon ?? '📊',
-                  style: const TextStyle(fontSize: 20),
-                ),
+                Text(type.icon ?? '📊', style: const TextStyle(fontSize: 20)),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
@@ -687,20 +730,14 @@ _buildStatCard(
                   ),
                 ),
                 if (isAbnormal)
-                  Icon(
-                    Icons.warning,
-                    color: AppTheme.errorColor,
-                    size: 16,
-                  ),
+                  Icon(Icons.warning, color: AppTheme.errorColor, size: 16),
               ],
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
-              hasReading 
-                  ? latestReading!.displayValue
-                  : 'No data',
+              hasReading ? latestReading!.displayValue : 'No data',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: hasReading 
+                color: hasReading
                     ? (isAbnormal ? AppTheme.errorColor : AppTheme.primaryColor)
                     : AppTheme.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
@@ -717,7 +754,7 @@ _buildStatCard(
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    hasReading 
+                    hasReading
                         ? 'Latest: ${_formatTimeAgo(latestReading!.readingTime)}'
                         : 'Not recorded',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -733,11 +770,7 @@ _buildStatCard(
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(
-                    Icons.today,
-                    size: 12,
-                    color: AppTheme.primaryColor,
-                  ),
+                  Icon(Icons.today, size: 12, color: AppTheme.primaryColor),
                   const SizedBox(width: 4),
                   Text(
                     '$todayCount today',
@@ -757,7 +790,7 @@ _buildStatCard(
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inHours < 1) {
@@ -779,9 +812,9 @@ _buildStatCard(
       children: [
         Text(
           'Quick Actions',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppTheme.onSurfaceColor,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(color: AppTheme.onSurfaceColor),
         ),
         const SizedBox(height: AppSpacing.m),
         GridView.count(
@@ -896,10 +929,7 @@ _buildStatCard(
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-          border: Border.all(
-            width: 1,
-            color: AppTheme.outlineVariant,
-          ),
+          border: Border.all(width: 1, color: AppTheme.outlineVariant),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -911,11 +941,7 @@ _buildStatCard(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 32,
-            ),
+            Icon(icon, color: color, size: 32),
             const SizedBox(height: AppSpacing.s),
             Text(
               title,
@@ -937,25 +963,18 @@ _buildStatCard(
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        border: Border.all(
-          width: 1,
-          color: AppTheme.outlineVariant,
-        ),
+        border: Border.all(width: 1, color: AppTheme.outlineVariant),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            size: 48,
-            color: AppTheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 48, color: AppTheme.onSurfaceVariant),
           const SizedBox(height: AppSpacing.m),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -968,18 +987,11 @@ _buildStatCard(
       decoration: BoxDecoration(
         color: AppTheme.errorContainer,
         borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        border: Border.all(
-          width: 1,
-          color: AppTheme.errorColor,
-        ),
+        border: Border.all(width: 1, color: AppTheme.errorColor),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: AppTheme.errorColor,
-          ),
+          Icon(Icons.error_outline, size: 48, color: AppTheme.errorColor),
           const SizedBox(height: AppSpacing.m),
           Text(
             'Error loading data',
@@ -992,9 +1004,9 @@ _buildStatCard(
           Text(
             error,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.errorColor,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.errorColor),
           ),
         ],
       ),

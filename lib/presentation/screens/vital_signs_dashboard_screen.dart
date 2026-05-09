@@ -212,7 +212,10 @@ class _VitalSignsDashboardScreenState extends ConsumerState<VitalSignsDashboardS
       ),
       child: LineChart(
         LineChartData(
-          gridData: const FlGridData(show: true),
+          gridData: FlGridData(
+            show: true,
+            horizontalInterval: 1, // Fix for horizontalInterval != 0 error
+          ),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
               sideTitles: SideTitles(

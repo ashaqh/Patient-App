@@ -331,20 +331,26 @@ final medicineListProvider = StateNotifierProvider<MedicineListNotifier, Medicin
 
 // Today's medicines provider
 final todaysMedicinesProvider = FutureProvider<List<Medicine>>((ref) async {
-  final medicineRepository = ref.watch(medicineRepositoryProvider);
-  return await medicineRepository.getMedicinesForToday();
+  final medicines = ref.watch(
+    medicineListProvider.select((state) => state.medicines),
+  );
+  return medicines.where((medicine) => medicine.shouldBeTakenToday()).toList();
 });
 
 // Active medicines provider
 final activeMedicinesProvider = FutureProvider<List<Medicine>>((ref) async {
-  final medicineRepository = ref.watch(medicineRepositoryProvider);
-  return await medicineRepository.getActiveMedicines();
+  final medicines = ref.watch(
+    medicineListProvider.select((state) => state.medicines),
+  );
+  return medicines.where((medicine) => medicine.isActive).toList();
 });
 
 // Medicine count provider
 final medicineCountProvider = FutureProvider<int>((ref) async {
-  final medicineRepository = ref.watch(medicineRepositoryProvider);
-  return await medicineRepository.getMedicineCount();
+  final medicines = ref.watch(
+    medicineListProvider.select((state) => state.medicines),
+  );
+  return medicines.length;
 });
 
 // Helper function to create a new medicine

@@ -24,11 +24,23 @@ class VitalSignValidation {
       return 'Value must be at least $min';
     }
     
-    if (numericValue > max) {
+    if (numericValue > max && !_allowsHighOutOfRangeValue(type)) {
       return 'Value must not exceed $max';
     }
     
-    // Additional type-specific validations
+    return null;
+  }
+
+  static String? getVitalSignWarning(
+    String? value,
+    VitalSignType type, {
+    bool isFirstValue = true,
+  }) {
+    final numericValue = double.tryParse(value ?? '');
+    if (numericValue == null) {
+      return null;
+    }
+
     switch (type) {
       case VitalSignType.bloodPressure:
         if (isFirstValue) {
@@ -84,6 +96,11 @@ class VitalSignValidation {
     
     return null;
   }
+
+  static bool _allowsHighOutOfRangeValue(VitalSignType type) {
+    return type == VitalSignType.bloodPressure ||
+        type == VitalSignType.bloodSugar;
+  }
   
   // Validate blood pressure values together
   static String? validateBloodPressure(String? systolic, String? diastolic) {
@@ -98,12 +115,31 @@ class VitalSignValidation {
       return 'Systolic must be greater than diastolic';
     }
     
-    // Check for dangerous combinations
+    return null;
+  }
+
+  static String? getBloodPressureWarning(String? systolic, String? diastolic) {
+    final systolicValue = double.tryParse(systolic ?? '');
+    final diastolicValue = double.tryParse(diastolic ?? '');
+
+    if (systolicValue == null || diastolicValue == null) {
+      return null;
+    }
+
     if (systolicValue > 180 && diastolicValue > 120) {
       return 'Dangerously high blood pressure. Seek emergency care.';
     }
-    
-    return null;
+
+    return getVitalSignWarning(
+          systolic,
+          VitalSignType.bloodPressure,
+          isFirstValue: true,
+        ) ??
+        getVitalSignWarning(
+          diastolic,
+          VitalSignType.bloodPressure,
+          isFirstValue: false,
+        );
   }
   
   // Get target range description for a vital sign type

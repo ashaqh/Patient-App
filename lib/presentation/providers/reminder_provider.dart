@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/database_constants.dart';
 import '../../core/services/reminder_scheduler.dart';
 import '../../domain/entities/reminder_log.dart';
+import 'database_change_monitor_provider.dart';
 import 'medicine_provider.dart';
 
 // Reminder scheduler provider is now defined in medicine_provider.dart
@@ -15,15 +17,37 @@ final reminderSchedulerInitializerProvider = FutureProvider<void>((ref) async {
 
 // Today's reminders provider
 final todaysRemindersProvider = FutureProvider<List<ReminderLog>>((ref) async {
+  ref.watch(medicineListProvider.select((state) => state.medicines));
+  _watchReminderLogChanges(ref);
   final reminderScheduler = ref.watch(reminderSchedulerProvider);
   return await reminderScheduler.getTodaysReminders();
 });
 
 // Reminder statistics provider
 final reminderStatisticsProvider = FutureProvider<Map<String, int>>((ref) async {
+  ref.watch(medicineListProvider.select((state) => state.medicines));
+  _watchReminderLogChanges(ref);
   final reminderScheduler = ref.watch(reminderSchedulerProvider);
   return await reminderScheduler.getReminderStatistics();
 });
+
+void _watchReminderLogChanges(Ref ref) {
+  ref.watch(
+    databaseChangesStreamProvider.select((changesAsync) {
+      return changesAsync.when(
+        data: (changes) => changes
+            .where(
+              (change) =>
+                  change.tableName == DatabaseConstants.tableReminderLogs,
+            )
+            .map((change) => change.timestamp.toIso8601String())
+            .join('|'),
+        loading: () => '',
+        error: (error, stackTrace) => '',
+      );
+    }),
+  );
+}
 
 // Reminder status updater provider
 class ReminderStatusUpdater {

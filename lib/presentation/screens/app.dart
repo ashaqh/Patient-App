@@ -24,6 +24,12 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Initialize reminder scheduler when app starts
     ref.read(reminderSchedulerInitializerProvider);
+    if (notificationHandler != null) {
+      NotificationHandler.onReminderChanged = () {
+        ref.invalidate(todaysRemindersProvider);
+        ref.invalidate(reminderStatisticsProvider);
+      };
+    }
     
     return MaterialApp(
       title: 'CareVault',
@@ -43,7 +49,8 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
   ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
+class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _isLocked = false;
   bool _isCheckingLock = true;
@@ -66,12 +73,27 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Use post-frame callback with a small delay to ensure everything is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 500), () {
         _checkAppLock();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(todaysRemindersProvider);
+      ref.invalidate(reminderStatisticsProvider);
+    }
   }
 
   Future<void> _checkAppLock() async {

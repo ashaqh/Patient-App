@@ -49,8 +49,11 @@ class AuditLogCharts {
             SizedBox(
               height: 200,
               child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(show: true),
+LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    horizontalInterval: 1,
+                  ),
                   titlesData: FlTitlesData(
                     show: true,
                     rightTitles: AxisTitles(
@@ -302,7 +305,7 @@ class AuditLogCharts {
             SizedBox(
               height: 200,
               child: BarChart(
-                BarChartData(
+BarChartData(
                   alignment: BarChartAlignment.spaceAround,
                   maxY:
                       resourceData.values.fold<int>(
@@ -311,7 +314,10 @@ class AuditLogCharts {
                       ) *
                       1.1,
                   barGroups: barGroups,
-                  gridData: FlGridData(show: true),
+                  gridData: FlGridData(
+                    show: true,
+                    horizontalInterval: 1,
+                  ),
                   titlesData: FlTitlesData(
                     show: true,
                     bottomTitles: AxisTitles(
@@ -576,7 +582,10 @@ class AuditLogCharts {
                       ],
                     );
                   }).toList(),
-                  gridData: FlGridData(show: true),
+                  gridData: FlGridData(
+                    show: true,
+                    horizontalInterval: 1,
+                  ),
                   titlesData: FlTitlesData(
                     show: true,
                     bottomTitles: AxisTitles(

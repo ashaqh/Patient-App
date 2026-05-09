@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/themes/app_theme.dart';
 import '../../core/constants/spacing_constants.dart';
+import '../../core/utils/chart_axis_utils.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../providers/vital_sign_provider.dart';
 import '../../domain/entities/vital_sign.dart';
@@ -136,18 +137,22 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
     final minY = sortedSigns.map((s) => s.value1).reduce((a, b) => a < b ? a : b);
     final maxY = sortedSigns.map((s) => s.value1).reduce((a, b) => a > b ? a : b);
     
-    double chartMinY = minY - (maxY - minY) * 0.1;
-    double chartMaxY = maxY + (maxY - minY) * 0.1;
+    double chartMinY = minY;
+    double chartMaxY = maxY;
     
     if (type == VitalSignType.bloodPressure) {
       final minDiastolic = sortedSigns.map((s) => s.value2 ?? 0).reduce((a, b) => a < b ? a : b);
       final maxDiastolic = sortedSigns.map((s) => s.value2 ?? 0).reduce((a, b) => a > b ? a : b);
-      chartMinY = (chartMinY < minDiastolic - 10) ? chartMinY : minDiastolic - 10;
-      chartMaxY = (chartMaxY > maxDiastolic + 10) ? chartMaxY : maxDiastolic + 10;
+      chartMinY = chartMinY < minDiastolic ? chartMinY : minDiastolic;
+      chartMaxY = chartMaxY > maxDiastolic ? chartMaxY : maxDiastolic;
     }
 
-    if (chartMinY < type.minValue) chartMinY = type.minValue;
-    if (chartMaxY > type.maxValue) chartMaxY = type.maxValue;
+    final chartAxis = ChartAxisUtils.paddedRange(
+      minValue: chartMinY,
+      maxValue: chartMaxY,
+      absoluteMin: type.minValue,
+      absoluteMax: type.maxValue,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,7 +200,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
-                horizontalInterval: (chartMaxY - chartMinY) / 4,
+                horizontalInterval: chartAxis.horizontalInterval,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
                     color: AppTheme.onSurfaceVariant.withOpacity(0.2),
@@ -232,7 +237,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                   sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 45,
-                    interval: (chartMaxY - chartMinY) / 4,
+                    interval: chartAxis.horizontalInterval,
                     getTitlesWidget: (value, meta) {
                       return Text(
                         value.toInt().toString(),
@@ -261,8 +266,8 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
               ),
               minX: 0,
               maxX: (sortedSigns.length - 1).toDouble(),
-              minY: chartMinY,
-              maxY: chartMaxY,
+              minY: chartAxis.minY,
+              maxY: chartAxis.maxY,
               lineBarsData: [
                 if (type == VitalSignType.bloodPressure) ...[
                   LineChartBarData(

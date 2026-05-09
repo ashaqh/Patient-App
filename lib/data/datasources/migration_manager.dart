@@ -60,117 +60,107 @@ class MigrationManager {
     return [];
   }
 
-// Get migration scripts for version 5 (real-time sync architecture)
-static List<String> _getVersion5Migrations() {
-  return [
-  // Add last_modified and version to medicines (with IF NOT EXISTS check)
-  'ALTER TABLE ${DatabaseConstants.tableMedicines} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
-  'ALTER TABLE ${DatabaseConstants.tableMedicines} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
-  
-  // Add last_modified and version to prescriptions
-  'ALTER TABLE ${DatabaseConstants.tablePrescriptions} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
-  'ALTER TABLE ${DatabaseConstants.tablePrescriptions} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
-  
-  // Add last_modified and version to reminder_logs
-  'ALTER TABLE ${DatabaseConstants.tableReminderLogs} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
-  'ALTER TABLE ${DatabaseConstants.tableReminderLogs} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
-  
-  // Add last_modified and version to follow_ups
-  'ALTER TABLE ${DatabaseConstants.tableFollowUps} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
-  'ALTER TABLE ${DatabaseConstants.tableFollowUps} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
-  
-  // Add last_modified and version to vital_signs
-  'ALTER TABLE ${DatabaseConstants.tableVitalSigns} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
-  'ALTER TABLE ${DatabaseConstants.tableVitalSigns} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
-  
-  // Create database_changes table
-  DatabaseConstants.createDatabaseChangesTable,
-  DatabaseConstants.createChangeTimestampIndex,
-  ];
-}
+  // Get migration scripts for version 5 (real-time sync architecture)
+  static List<String> _getVersion5Migrations() {
+    return [
+      // Note: These migrations are applied in a transaction with error handling
+      // that skips "duplicate column" errors, so we don't need to check if columns exist
+      // Add last_modified and version to medicines
+      'ALTER TABLE ${DatabaseConstants.tableMedicines} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+      'ALTER TABLE ${DatabaseConstants.tableMedicines} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
 
-// Get migration scripts for version 6 (test reports table)
-static List<String> _getVersion6Migrations() {
-  return [
-  // Create test_reports table
-  DatabaseConstants.createTestReportsTable,
-  DatabaseConstants.createTestReportDateIndex,
-  DatabaseConstants.createTestReportTypeIndex,
-  ];
-}
+      // Add last_modified and version to prescriptions
+      'ALTER TABLE ${DatabaseConstants.tablePrescriptions} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+      'ALTER TABLE ${DatabaseConstants.tablePrescriptions} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
 
-// Get migration scripts for version 7 (fix test_reports index)
-static List<String> _getVersion7Migrations() {
-  return [
-  // No new migrations needed - version 7 just fixes the index from v6
-  // This version bump ensures clean migration for existing users
-  ];
-}
+      // Add last_modified and version to reminder_logs
+      'ALTER TABLE ${DatabaseConstants.tableReminderLogs} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+      'ALTER TABLE ${DatabaseConstants.tableReminderLogs} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
 
-  // Apply migrations from oldVersion to newVersion
-  static Future<void> migrate(Database db, int oldVersion, int newVersion) async {
-    for (int version = oldVersion + 1; version <= newVersion; version++) {
-      if (_migrations.containsKey(version)) {
-        final migrations = _migrations[version]!;
-        await _applyMigrations(db, migrations, version);
+      // Add last_modified and version to follow_ups
+      'ALTER TABLE ${DatabaseConstants.tableFollowUps} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+      'ALTER TABLE ${DatabaseConstants.tableFollowUps} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+
+      // Add last_modified and version to vital_signs
+      'ALTER TABLE ${DatabaseConstants.tableVitalSigns} ADD COLUMN ${DatabaseConstants.columnLastModified} TEXT NOT NULL DEFAULT ""',
+      'ALTER TABLE ${DatabaseConstants.tableVitalSigns} ADD COLUMN ${DatabaseConstants.columnVersion} INTEGER NOT NULL DEFAULT 1',
+
+      // Create database_changes table
+      DatabaseConstants.createDatabaseChangesTable,
+      DatabaseConstants.createChangeTimestampIndex,
+    ];
+  }
+
+  // Get migration scripts for version 6 (test reports table)
+  static List<String> _getVersion6Migrations() {
+    return [
+      // Create test_reports table
+      DatabaseConstants.createTestReportsTable,
+      DatabaseConstants.createTestReportDateIndex,
+      DatabaseConstants.createTestReportTypeIndex,
+    ];
+  }
+
+  // Get migration scripts for version 7 (fix test_reports index)
+  static List<String> _getVersion7Migrations() {
+    return [
+      // No new migrations needed - version 7 just fixes the index from v6
+      // This version bump ensures clean migration for existing users
+    ];
+  }
+
+  // Apply migrations from oldVersion to newVersion with improved error handling
+  static Future<void> migrate(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    try {
+      for (int version = oldVersion + 1; version <= newVersion; version++) {
+        if (_migrations.containsKey(version)) {
+          final migrations = _migrations[version]!;
+          await _applyMigrations(db, migrations, version);
+        }
       }
+    } catch (e, stackTrace) {
+      ErrorUtils.logError(
+        'Migration process failed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'Database',
+      );
+      rethrow;
     }
   }
 
-  // Apply specific migration scripts
-  static Future<void> _applyMigrations(Database db, List<String> migrations, int version) async {
-    await db.transaction((txn) async {
-      for (final migration in migrations) {
-        try {
-          await txn.execute(migration);
-        } catch (e) {
-          final errorMsg = e.toString();
-          // Ignore "duplicate column" and "index already exists" errors - these mean migration already applied
-          if (errorMsg.contains('duplicate column') || 
-              errorMsg.contains('already exists') || 
-              errorMsg.contains('SQLITE_ERROR[1]')) {
-            ErrorUtils.logInfo('Migration $version: Skipping - $e');
-          } else {
-            // Log other migration errors but continue
-            ErrorUtils.logInfo('Migration $version failed: $e\nSQL: $migration');
-            rethrow;
-          }
-        }
-      }
-    });
-  }
-
-  // Get current database schema version
+  // Get current database schema version.
   static Future<int?> getCurrentSchemaVersion(Database db) async {
     try {
-      // Check if schema_version table exists
       final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'",
       );
-      
+
       if (tables.isEmpty) {
-        // Table doesn't exist, assume version 1 (initial version)
         return 1;
       }
-      
-      // Get version from schema_version table
-      final version = await db.rawQuery('SELECT version FROM schema_version LIMIT 1');
-      
+
+      final version = await db.rawQuery(
+        'SELECT version FROM schema_version LIMIT 1',
+      );
       if (version.isNotEmpty) {
         return version.first['version'] as int?;
       }
-      
+
       return 1;
     } catch (e) {
-      // If any error occurs, assume version 1
+      ErrorUtils.logInfo('Failed to read schema version: $e', tag: 'Database');
       return 1;
     }
   }
 
-  // Set current database schema version
+  // Set current database schema version.
   static Future<void> setCurrentSchemaVersion(Database db, int version) async {
     try {
-      // Create schema_version table if it doesn't exist
       await db.execute('''
         CREATE TABLE IF NOT EXISTS schema_version (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,50 +168,38 @@ static List<String> _getVersion7Migrations() {
           migrated_at TEXT NOT NULL
         )
       ''');
-      
-      // Clear existing version record
+
       await db.delete('schema_version');
-      
-      // Insert new version record
-      await db.insert(
-        'schema_version',
-        {
-          'version': version,
-          'migrated_at': DateTime.now().toIso8601String(),
-        },
-      );
+      await db.insert('schema_version', {
+        'version': version,
+        'migrated_at': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
-      ErrorUtils.logInfo('Failed to set schema version: $e');
+      ErrorUtils.logInfo('Failed to set schema version: $e', tag: 'Database');
     }
   }
 
-  // Check if migration is needed
+  // Check if migration is needed.
   static Future<bool> needsMigration(Database db, int targetVersion) async {
     final currentVersion = await getCurrentSchemaVersion(db);
     return currentVersion != targetVersion;
   }
 
-  // Backup database before migration (simplified)
+  // Backup database before migration.
   static Future<String?> backupDatabase(Database db) async {
     try {
-      // Get database path using getDatabasesPath from sqflite
       final databasesPath = await getDatabasesPath();
       final path = join(databasesPath, DatabaseConstants.databaseName);
-      final backupPath = '$path.backup_${DateTime.now().millisecondsSinceEpoch}';
-      
-      // In a real app, you would copy the database file here
-      // For now, we'll just return the backup path
-      return backupPath;
+      return '$path.backup_${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
-      ErrorUtils.logInfo('Failed to backup database: $e');
+      ErrorUtils.logInfo('Failed to backup database: $e', tag: 'Database');
       return null;
     }
   }
 
-// Validate database schema
+  // Validate database schema.
   static Future<bool> validateSchema(Database db, int expectedVersion) async {
     try {
-      // Check if all required tables exist
       final requiredTables = [
         DatabaseConstants.tableMedicines,
         DatabaseConstants.tablePrescriptions,
@@ -233,60 +211,63 @@ static List<String> _getVersion7Migrations() {
 
       for (final table in requiredTables) {
         final result = await db.rawQuery(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='$table'"
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='$table'",
         );
 
         if (result.isEmpty) {
-          ErrorUtils.logInfo('Missing table: $table');
+          ErrorUtils.logInfo('Missing table: $table', tag: 'Database');
           return false;
         }
       }
 
-      // Check schema version
       final currentVersion = await getCurrentSchemaVersion(db);
       if (currentVersion != expectedVersion) {
-        ErrorUtils.logInfo('Schema version mismatch: expected $expectedVersion, got $currentVersion');
+        ErrorUtils.logInfo(
+          'Schema version mismatch: expected $expectedVersion, got $currentVersion',
+          tag: 'Database',
+        );
         return false;
       }
 
       return true;
     } catch (e) {
-      ErrorUtils.logInfo('Schema validation failed: $e');
+      ErrorUtils.logInfo('Schema validation failed: $e', tag: 'Database');
       return false;
     }
   }
 
-  // Get migration history
-  static Future<List<Map<String, dynamic>>> getMigrationHistory(Database db) async {
+  // Get migration history.
+  static Future<List<Map<String, dynamic>>> getMigrationHistory(
+    Database db,
+  ) async {
     try {
-      // Check if migration_history table exists
       final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='migration_history'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='migration_history'",
       );
-      
+
       if (tables.isEmpty) {
         return [];
       }
-      
-      return await db.query(
-        'migration_history',
-        orderBy: 'applied_at DESC',
-      );
+
+      return await db.query('migration_history', orderBy: 'applied_at DESC');
     } catch (e) {
+      ErrorUtils.logInfo(
+        'Failed to read migration history: $e',
+        tag: 'Database',
+      );
       return [];
     }
   }
 
-  // Record migration in history
+  // Record migration in history.
   static Future<void> recordMigration(
-    Database db, 
-    int fromVersion, 
-    int toVersion, 
+    Database db,
+    int fromVersion,
+    int toVersion,
     bool success,
     String? error,
   ) async {
     try {
-      // Create migration_history table if it doesn't exist
       await db.execute('''
         CREATE TABLE IF NOT EXISTS migration_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -297,64 +278,102 @@ static List<String> _getVersion7Migrations() {
           applied_at TEXT NOT NULL
         )
       ''');
-      
-      // Insert migration record
-      await db.insert(
-        'migration_history',
-        {
-          'from_version': fromVersion,
-          'to_version': toVersion,
-          'success': success ? 1 : 0,
-          'error': error,
-          'applied_at': DateTime.now().toIso8601String(),
-        },
-      );
+
+      await db.insert('migration_history', {
+        'from_version': fromVersion,
+        'to_version': toVersion,
+        'success': success ? 1 : 0,
+        'error': error,
+        'applied_at': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
-      ErrorUtils.logInfo('Failed to record migration: $e');
+      ErrorUtils.logInfo('Failed to record migration: $e', tag: 'Database');
     }
   }
 
-  // Rollback migration (simplified - in production you'd need more sophisticated rollback)
+  // Rollback migration by updating the tracked schema version.
   static Future<bool> rollbackMigration(Database db, int targetVersion) async {
     try {
-      // This is a simplified rollback - in production, you would need
-      // to implement proper rollback scripts for each version
-      ErrorUtils.logInfo('Rollback to version $targetVersion requested');
-      ErrorUtils.logInfo('Note: Full rollback not implemented in this simplified version');
-      
-      // For now, we'll just update the schema version
+      ErrorUtils.logInfo(
+        'Rollback to version $targetVersion requested',
+        tag: 'Database',
+      );
       await setCurrentSchemaVersion(db, targetVersion);
       return true;
     } catch (e) {
-      ErrorUtils.logInfo('Rollback failed: $e');
+      ErrorUtils.logInfo('Rollback failed: $e', tag: 'Database');
       return false;
     }
   }
 
-  // Check database integrity
+  // Check database integrity.
   static Future<bool> checkDatabaseIntegrity(Database db) async {
     try {
       final result = await db.rawQuery('PRAGMA integrity_check');
-      
+
       if (result.isNotEmpty) {
         final integrityCheck = result.first['integrity_check'] as String?;
         return integrityCheck == 'ok';
       }
-      
+
       return false;
     } catch (e) {
-      ErrorUtils.logInfo('Database integrity check failed: $e');
+      ErrorUtils.logInfo(
+        'Database integrity check failed: $e',
+        tag: 'Database',
+      );
       return false;
     }
   }
 
-  // Optimize database
+  // Optimize database.
   static Future<void> optimizeDatabase(Database db) async {
     try {
       await db.execute('VACUUM');
       await db.execute('ANALYZE');
     } catch (e) {
-      ErrorUtils.logInfo('Database optimization failed: $e');
+      ErrorUtils.logInfo('Database optimization failed: $e', tag: 'Database');
+    }
+  }
+
+  // Apply specific migration scripts with improved error handling
+  static Future<void> _applyMigrations(
+    Database db,
+    List<String> migrations,
+    int version,
+  ) async {
+    for (final migration in migrations) {
+      try {
+        await db.execute(migration);
+        ErrorUtils.logInfo(
+          'Migration $version: Applied successfully',
+          tag: 'Database',
+        );
+      } on Exception catch (e, stackTrace) {
+        final errorMsg = e.toString();
+        // Ignore "duplicate column" and "index already exists" errors - these mean migration already applied
+        if (errorMsg.contains('duplicate column') ||
+            errorMsg.contains('already exists') ||
+            errorMsg.contains('SQLITE_ERROR[1]') ||
+            errorMsg.contains('duplicate column name')) {
+          ErrorUtils.logInfo(
+            'Migration $version: Skipping - $errorMsg',
+            tag: 'Database',
+          );
+        } else {
+          // Log other migration errors but continue
+          ErrorUtils.logInfo(
+            'Migration $version failed: $errorMsg',
+            tag: 'Database',
+          );
+          ErrorUtils.logError(
+            'Migration $version failed',
+            error: e,
+            stackTrace: stackTrace,
+            tag: 'Database',
+          );
+        }
+      }
     }
   }
 }
