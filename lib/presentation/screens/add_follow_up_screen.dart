@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/themes/app_theme.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../../domain/entities/follow_up.dart';
@@ -401,24 +402,7 @@ class _AddFollowUpScreenState extends ConsumerState<AddFollowUpScreen> {
       initialDate: _selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-              surface: Theme.of(context).colorScheme.surface,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      builder: AppTheme.datePickerThemeBuilder,
     );
 
     if (picked != null && picked != _selectedDate) {
@@ -430,24 +414,7 @@ class _AddFollowUpScreenState extends ConsumerState<AddFollowUpScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-              surface: Theme.of(context).colorScheme.surface,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      builder: AppTheme.timePickerThemeBuilder,
     );
 
     if (picked != null && picked != _selectedTime) {

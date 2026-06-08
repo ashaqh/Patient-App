@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Delay used to allow the app-init step to complete before navigating away
+
 import 'core/services/notification_handler.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/backup/backup_scheduler_service.dart';

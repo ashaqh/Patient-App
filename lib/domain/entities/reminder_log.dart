@@ -180,6 +180,27 @@ class ReminderLog {
     return scheduledTime.isBefore(DateTime.now());
   }
 
+  DateTime get manualLoggingOpensAt =>
+      scheduledTime.subtract(const Duration(minutes: 30));
+
+  DateTime get manualLoggingClosesAt =>
+      DateTime(scheduledTime.year, scheduledTime.month, scheduledTime.day, 23, 59, 59);
+
+  bool isManualLoggingAvailable({DateTime? now}) {
+    if (status != ReminderStatus.pending) return false;
+
+    final effectiveNow = now ?? DateTime.now();
+    return !effectiveNow.isBefore(manualLoggingOpensAt) &&
+        !effectiveNow.isAfter(manualLoggingClosesAt);
+  }
+
+  bool isManualLoggingExpired({DateTime? now}) {
+    if (status != ReminderStatus.pending) return false;
+
+    final effectiveNow = now ?? DateTime.now();
+    return effectiveNow.isAfter(manualLoggingClosesAt);
+  }
+
   // Get time difference between scheduled and actual time
   Duration? get timeDifference {
     if (actualTime == null) return null;

@@ -224,6 +224,9 @@ class MedicineListScreen extends ConsumerWidget {
     return Card(
       elevation: 2,
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minVerticalPadding: 12,
+        isThreeLine: true,
         leading: CircleAvatar(
           backgroundColor: medicine.isActive 
             ? Theme.of(context).colorScheme.primary.withOpacity(0.2)

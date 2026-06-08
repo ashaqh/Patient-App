@@ -1,4 +1,4 @@
-package com.carevault.carevault
+package com.apprise.carevault
 
 import io.flutter.embedding.android.FlutterActivity
 

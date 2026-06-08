@@ -7,6 +7,7 @@ import '../../core/constants/spacing_constants.dart';
 import '../../core/utils/validation_utils.dart';
 import '../providers/medicine_provider.dart';
 import '../../domain/entities/medicine.dart';
+import '../widgets/common/glass_widgets.dart';
 
 class AddMedicineScreenNew extends ConsumerStatefulWidget {
   final Medicine? medicine;
@@ -71,22 +72,23 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.medicine != null;
-    return Scaffold(
-      backgroundColor: AppTheme.secondaryColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: AppTheme.onPrimaryColor,
-        elevation: 0,
-        title: Text(
-          isEditing ? 'Edit Medicine' : 'Add Medicine',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: AppTheme.onPrimaryColor,
-            fontWeight: FontWeight.w600,
+    return GradientOrbBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppTheme.onPrimaryColor,
+          elevation: 0,
+          title: Text(
+            isEditing ? 'Edit Medicine' : 'Add Medicine',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: AppTheme.onPrimaryColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
         child: Form(
           key: _formKey,
           child: Column(
@@ -157,30 +159,21 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
 
               _buildActiveSwitch(),
               const SizedBox(height: AppSpacing.xl),
-
+  
               _buildAddButton(context),
               const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSectionCard(List<Widget> children, {required String title}) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: AppSpacing.borderRadiusMedium,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -228,22 +221,7 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
           controller: controller,
           decoration: InputDecoration(
             hintText: hintText,
-            prefixIcon: icon != null ? Icon(icon, color: AppTheme.onSurfaceVariant) : null,
-            filled: true,
-            fillColor: AppTheme.secondaryColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(width: 2, color: AppTheme.primaryColor),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
+            prefixIcon: icon != null ? Icon(icon) : null,
           ),
           validator: validator,
           maxLines: maxLines,
@@ -268,22 +246,7 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
           initialValue: _frequencyController.text.isEmpty ? null : _frequencyController.text,
           decoration: InputDecoration(
             hintText: 'Select frequency',
-            prefixIcon: const Icon(Icons.schedule, color: AppTheme.onSurfaceVariant),
-            filled: true,
-            fillColor: AppTheme.secondaryColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(width: 2, color: AppTheme.primaryColor),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
+            prefixIcon: const Icon(Icons.schedule),
           ),
           items: _frequencyOptions.map((frequency) {
             return DropdownMenuItem(
@@ -328,9 +291,9 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: const Color(0x14FFFFFF),
               border: Border.all(color: AppTheme.outlineColor),
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Text(
@@ -385,6 +348,7 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
               initialDate: value ?? DateTime.now(),
               firstDate: DateTime(2000),
               lastDate: DateTime(2100),
+              builder: AppTheme.datePickerThemeBuilder,
             );
             if (selectedDate != null) {
               onChanged(selectedDate);
@@ -393,9 +357,9 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: const Color(0x14FFFFFF),
               border: Border.all(color: AppTheme.outlineColor),
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
@@ -432,22 +396,12 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
   }
 
   Widget _buildActiveSwitch() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: AppSpacing.borderRadiusMedium,
       child: Row(
         children: [
-          Icon(Icons.toggle_on, color: AppTheme.onSurfaceVariant),
+          const Icon(Icons.toggle_on, color: AppTheme.onSurfaceVariant),
           const SizedBox(width: AppSpacing.m),
           Text(
             'Active',
@@ -516,6 +470,7 @@ class _AddMedicineScreenNewState extends ConsumerState<AddMedicineScreenNew> {
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: AppTheme.timePickerThemeBuilder,
     );
 
     if (selectedTime != null) {

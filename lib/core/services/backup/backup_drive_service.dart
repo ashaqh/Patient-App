@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:google_sign_in/google_sign_in.dart';
@@ -285,8 +284,10 @@ class BackupDriveService {
       }
     }
 
-    final headers = await _signInClient.authHeadersFor(account);
-    _driveApi = drive.DriveApi(_GoogleAuthClient(headers));
+    await _signInClient.authHeadersFor(account);
+    _driveApi = drive.DriveApi(
+      _GoogleAuthClient(() => _signInClient.authHeadersFor(account)),
+    );
     _currentAccount = BackupAccountInfo(
       email: account.email,
       displayName: account.displayName,
@@ -323,16 +324,10 @@ class BackupDriveService {
       'id': metadata.id,
       'appVersion': metadata.appVersion,
       'backupTimestamp': metadata.backupTimestamp.toUtc().toIso8601String(),
-      'deviceInfo': _appPropertyValue(
-        metadata.deviceName ?? metadata.deviceInfo,
-      ),
       'schemaVersion': metadata.schemaVersion.toString(),
       'fileCount': metadata.fileCount.toString(),
       'encryptionVersion': metadata.encryptionVersion.toString(),
       'backupSize': metadata.backupSize.toString(),
-      if (metadata.deviceName != null)
-        'deviceName': _appPropertyValue(metadata.deviceName!),
-      if (metadata.notes != null) 'notes': _appPropertyValue(metadata.notes!),
     };
   }
 
@@ -341,32 +336,17 @@ class BackupDriveService {
   ) {
     return _metadataProperties(metadata);
   }
-
-  static String _appPropertyValue(String value) {
-    final bytes = utf8.encode(value);
-    if (bytes.length <= maxAppPropertyValueBytes) return value;
-
-    var end = value.length;
-    while (end > 0) {
-      final candidate = value.substring(0, end).trimRight();
-      if (utf8.encode(candidate).length <= maxAppPropertyValueBytes) {
-        return candidate;
-      }
-      end -= 1;
-    }
-    return '';
-  }
 }
 
 class _GoogleAuthClient extends http.BaseClient {
-  final Map<String, String> _headers;
+  final Future<Map<String, String>> Function() _headersProvider;
   final http.Client _client = http.Client();
 
-  _GoogleAuthClient(this._headers);
+  _GoogleAuthClient(this._headersProvider);
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers.addAll(_headers);
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    request.headers.addAll(await _headersProvider());
     return _client.send(request);
   }
 

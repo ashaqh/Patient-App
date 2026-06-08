@@ -311,7 +311,11 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minVerticalPadding: 12,
+        isThreeLine: true,
         leading: _buildAuditLogIcon(log),
+
         title: Text(
           log.summary,
           style: TextStyle(

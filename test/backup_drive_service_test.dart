@@ -141,7 +141,7 @@ void main() {
         deviceInfo: List.filled(500, 'Samsung Android device info').join(' '),
         schemaVersion: 7,
         fileCount: 3,
-        encryptionVersion: 1,
+        encryptionVersion: 3,
         backupSize: 2048,
         deviceName: List.filled(20, 'Samsung Galaxy').join(' '),
         notes: List.filled(20, 'Manual backup note').join(' '),
@@ -151,6 +151,9 @@ void main() {
         metadata,
       );
 
+      expect(properties.containsKey('deviceInfo'), isFalse);
+      expect(properties.containsKey('deviceName'), isFalse);
+      expect(properties.containsKey('notes'), isFalse);
       expect(
         properties.values,
         everyElement(hasLength(lessThanOrEqualTo(124))),

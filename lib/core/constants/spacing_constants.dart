@@ -12,7 +12,7 @@ class AppSpacing {
   static const double xxl = base * 6;  // 48px
 
   // Screen margins
-  static const double screenHorizontal = xl;  // 32px
+  static const double screenHorizontal = m;  // 16px
   static const double screenVertical = xl;    // 32px
 
   // Card padding

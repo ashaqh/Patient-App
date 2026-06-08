@@ -1,10 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../domain/entities/prescription.dart';
 import '../providers/prescription_provider.dart';
+import '../widgets/common/glass_widgets.dart';
 import 'add_prescription_screen.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/constants/spacing_constants.dart';
@@ -18,107 +21,56 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     final recentPrescriptionsAsync = ref.watch(recentPrescriptionsProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryColor,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar with gradient
-          SliverAppBar(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: AppTheme.onPrimaryColor,
-            elevation: 4,
-            floating: true,
-            pinned: true,
-            expandedHeight: 120,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryColor.withOpacity(0.9),
-                    ],
-                  ),
-                ),
-              ),
-              title: Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Text(
-                  'Prescription Vault',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppTheme.onPrimaryColor,
-                    fontWeight: FontWeight.w700,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-            ),
-            actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.onPrimaryColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.search, size: 22),
-                ),
-                onPressed: () {
-                  _showSearchDialog(context, ref);
-                },
-                tooltip: 'Search',
-              ),
-            ],
-          ),
-
-          // Main Content
           SliverPadding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-              vertical: AppSpacing.m,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.xl,
+              AppSpacing.screenHorizontal,
+              86 + AppSpacing.xxl,
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Welcome Header
-                _buildWelcomeHeader(context),
+                const SectionHeader(
+                  eyebrow: 'Documents',
+                  title: 'Prescription Vault',
+                  subtitle:
+                      'Digitize and safeguard every prescription document.',
+                ).animate().fadeIn(duration: 300.ms).slideY(begin: .06, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // Statistics Section
-                _buildStatisticsSection(context, recentPrescriptionsAsync),
+                _buildStatisticsSection(context, recentPrescriptionsAsync)
+                    .animate()
+                    .fadeIn(delay: 80.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // Recent Prescriptions
                 _buildRecentPrescriptionsSection(
-                  context, 
-                  ref, 
-                  recentPrescriptionsAsync,
-                ),
+                      context,
+                      ref,
+                      recentPrescriptionsAsync,
+                    )
+                    .animate()
+                    .fadeIn(delay: 140.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // All Prescriptions
                 _buildAllPrescriptionsSection(
-                  context, 
-                  ref, 
-                  prescriptionListState,
-                ),
+                      context,
+                      ref,
+                      prescriptionListState,
+                    )
+                    .animate()
+                    .fadeIn(delay: 200.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.xxl),
               ]),
             ),
           ),
         ],
       ),
-      floatingActionButton: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        child: FloatingActionButton.extended(
+      floatingActionButton: UnconstrainedBox(
+        child: GradientFab(
           onPressed: () {
             Navigator.push(
               context,
@@ -127,22 +79,11 @@ class PrescriptionListScreenNew extends ConsumerWidget {
               ),
             );
           },
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: AppTheme.onPrimaryColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
-          ),
-          elevation: 6,
-          icon: const Icon(Icons.add, size: 24),
-          label: const Text(
-            'Add Prescription',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          icon: Icons.add,
+          label: 'Add Prescription',
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -150,7 +91,7 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     final now = DateTime.now();
     final hour = now.hour;
     String greeting;
-    
+
     if (hour < 12) {
       greeting = 'Good Morning';
     } else if (hour < 17) {
@@ -159,35 +100,41 @@ class PrescriptionListScreenNew extends ConsumerWidget {
       greeting = 'Good Evening';
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          greeting,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.w700,
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            greeting,
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              color: AppTheme.primaryFixed,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Manage your prescription documents',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppTheme.onSurfaceVariant,
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Manage your prescription documents',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildStatisticsSection(BuildContext context, AsyncValue<List<Prescription>> recentPrescriptionsAsync) {
+  Widget _buildStatisticsSection(
+    BuildContext context,
+    AsyncValue<List<Prescription>> recentPrescriptionsAsync,
+  ) {
     return recentPrescriptionsAsync.when(
       data: (prescriptions) {
         final totalCount = prescriptions.length;
         final thisMonthCount = prescriptions
             .where((p) => _isThisMonth(p.date))
             .length;
-        final lastUpload = prescriptions.isNotEmpty 
+        final lastUpload = prescriptions.isNotEmpty
             ? DateFormat('MMM dd').format(prescriptions.first.date)
             : 'None';
 
@@ -224,56 +171,63 @@ class PrescriptionListScreenNew extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.m),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.4,
-              mainAxisSpacing: AppSpacing.m,
-              crossAxisSpacing: AppSpacing.m,
-              children: [
-                _buildStatCard(
-                  context,
-                  'Total',
-                  totalCount.toString(),
-                  Icons.description,
-                  AppTheme.primaryColor,
-                  totalCount == 0 ? 'Start adding prescriptions' : 'All documents',
-                ),
-                _buildStatCard(
-                  context,
-                  'This Month',
-                  thisMonthCount.toString(),
-                  Icons.calendar_month,
-                  thisMonthCount > 0 ? AppTheme.primaryColor : AppTheme.neutralColor,
-                  'Added this month',
-                ),
-                _buildStatCard(
-                  context,
-                  'Last Upload',
-                  lastUpload,
-                  Icons.upload,
-                  prescriptions.isNotEmpty ? AppTheme.primaryColor : AppTheme.neutralColor,
-                  prescriptions.isNotEmpty ? 'Most recent' : 'No uploads yet',
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final statsCards = [
+                  _buildStatCard(
+                    context,
+                    'Total',
+                    totalCount.toString(),
+                    Icons.description,
+                    AppTheme.primaryColor,
+                    totalCount == 0
+                        ? 'Start adding prescriptions'
+                        : 'All documents',
+                  ),
+                  _buildStatCard(
+                    context,
+                    'This Month',
+                    thisMonthCount.toString(),
+                    Icons.calendar_month,
+                    thisMonthCount > 0
+                        ? AppTheme.primaryColor
+                        : AppTheme.neutralColor,
+                    'Added this month',
+                  ),
+                  _buildStatCard(
+                    context,
+                    'Last Upload',
+                    lastUpload,
+                    Icons.upload,
+                    prescriptions.isNotEmpty
+                        ? AppTheme.primaryColor
+                        : AppTheme.neutralColor,
+                    prescriptions.isNotEmpty ? 'Most recent' : 'No uploads yet',
+                  ),
+                ];
+                final crossAxisCount = constraints.maxWidth < 420 ? 1 : 3;
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: statsCards.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisExtent: crossAxisCount == 1 ? 168 : 172,
+                    mainAxisSpacing: AppSpacing.m,
+                    crossAxisSpacing: AppSpacing.m,
+                  ),
+                  itemBuilder: (context, index) => statsCards[index],
+                );
+              },
             ),
           ],
         );
       },
-      loading: () => Container(
+      loading: () => GlassCard(
         padding: const EdgeInsets.all(AppSpacing.l),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: AppSpacing.borderRadiusMedium,
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -283,20 +237,10 @@ class PrescriptionListScreenNew extends ConsumerWidget {
           ],
         ),
       ),
-      error: (error, stackTrace) => Container(
+      error: (error, stackTrace) => GlassCard(
         padding: const EdgeInsets.all(AppSpacing.l),
-        decoration: BoxDecoration(
-          color: AppTheme.errorContainer,
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-          border: Border.all(color: AppTheme.errorColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: AppSpacing.borderRadiusMedium,
+        color: AppTheme.errorColor.withValues(alpha: 0.12),
         child: Row(
           children: [
             Icon(Icons.error_outline, color: AppTheme.errorColor),
@@ -304,9 +248,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
             Expanded(
               child: Text(
                 'Error loading statistics',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.errorColor,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppTheme.errorColor),
               ),
             ),
           ],
@@ -315,39 +259,41 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    String subtitle,
+  ) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
       ),
+      borderRadius: AppSpacing.borderRadiusMedium,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: AppSpacing.m),
+          const SizedBox(height: AppSpacing.s),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w700,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -356,6 +302,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
               color: AppTheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -364,7 +313,7 @@ class PrescriptionListScreenNew extends ConsumerWidget {
               color: AppTheme.onSurfaceVariant.withOpacity(0.7),
             ),
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -380,19 +329,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     return recentPrescriptionsAsync.when(
       data: (prescriptions) {
         if (prescriptions.isEmpty) {
-          return Container(
+          return GlassCard(
             padding: const EdgeInsets.all(AppSpacing.l),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            borderRadius: AppSpacing.borderRadiusMedium,
             child: Column(
               children: [
                 Icon(
@@ -423,18 +362,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
 
         final recent = prescriptions.take(3).toList();
 
-        return Container(
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
-            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
+        return GlassCard(
+          padding: EdgeInsets.zero,
+          borderRadius: AppSpacing.borderRadiusMedium,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -445,10 +375,11 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                   children: [
                     Text(
                       'Recent Uploads',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppTheme.onSurfaceColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: AppTheme.onSurfaceColor,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -466,30 +397,42 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                       ),
                       child: Text(
                         'New',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppTheme.onPrimaryColor,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: AppTheme.onPrimaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ),
                   ],
                 ),
               ),
               const Divider(height: 1, color: AppTheme.outlineVariant),
-              ...recent.map((prescription) => Column(
-                children: [
-                  _buildPrescriptionCard(context, prescription, ref),
-                  if (recent.last != prescription)
-                    const Divider(height: 1, color: AppTheme.outlineVariant),
-                ],
-              )).toList(),
+              ...recent
+                  .map(
+                    (prescription) => Column(
+                      children: [
+                        _buildPrescriptionCard(context, prescription, ref),
+                        if (recent.last != prescription)
+                          const Divider(
+                            height: 1,
+                            color: AppTheme.outlineVariant,
+                          ),
+                      ],
+                    ),
+                  )
+                  .toList(),
               if (prescriptions.length > 3)
                 Container(
                   decoration: BoxDecoration(
                     color: AppTheme.secondaryColor,
                     borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(AppSpacing.borderRadiusMedium),
-                      bottomRight: Radius.circular(AppSpacing.borderRadiusMedium),
+                      bottomLeft: Radius.circular(
+                        AppSpacing.borderRadiusMedium,
+                      ),
+                      bottomRight: Radius.circular(
+                        AppSpacing.borderRadiusMedium,
+                      ),
                     ),
                   ),
                   child: TextButton(
@@ -502,8 +445,12 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                       padding: const EdgeInsets.all(AppSpacing.m),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(AppSpacing.borderRadiusMedium),
-                          bottomRight: Radius.circular(AppSpacing.borderRadiusMedium),
+                          bottomLeft: Radius.circular(
+                            AppSpacing.borderRadiusMedium,
+                          ),
+                          bottomRight: Radius.circular(
+                            AppSpacing.borderRadiusMedium,
+                          ),
                         ),
                       ),
                     ),
@@ -512,10 +459,11 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                       children: [
                         Text(
                           'View All ${prescriptions.length} Prescriptions',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Icon(
@@ -575,9 +523,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
             Expanded(
               child: Text(
                 'Error loading recent prescriptions',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.errorColor,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppTheme.errorColor),
               ),
             ),
           ],
@@ -592,21 +540,11 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     PrescriptionListState prescriptionListState,
   ) {
     final prescriptions = prescriptionListState.prescriptions;
-    
+
     if (prescriptions.isEmpty) {
-      return Container(
+      return GlassCard(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
+        borderRadius: AppSpacing.borderRadiusMedium,
         child: Column(
           children: [
             Container(
@@ -657,19 +595,7 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                     ),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: AppTheme.onPrimaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.l,
-                    vertical: AppSpacing.m,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                  ),
-                  elevation: 4,
-                  shadowColor: AppTheme.primaryColor.withOpacity(0.3),
-                ),
+                style: AppTheme.primaryButtonStyle,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -691,18 +617,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: AppSpacing.borderRadiusMedium,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -740,30 +657,38 @@ class PrescriptionListScreenNew extends ConsumerWidget {
             ),
           ),
           const Divider(height: 1, color: AppTheme.outlineVariant),
-          ...prescriptions.map((prescription) => Column(
-            children: [
-              _buildPrescriptionCard(context, prescription, ref),
-              if (prescriptions.last != prescription)
-                const Divider(height: 1, color: AppTheme.outlineVariant),
-            ],
-          )).toList(),
-
+          ...prescriptions
+              .map(
+                (prescription) => Column(
+                  children: [
+                    _buildPrescriptionCard(context, prescription, ref),
+                    if (prescriptions.last != prescription)
+                      const Divider(height: 1, color: AppTheme.outlineVariant),
+                  ],
+                ),
+              )
+              .toList(),
         ],
       ),
     );
   }
 
-  Widget _buildPrescriptionCard(BuildContext context, Prescription prescription, WidgetRef ref) {
+  Widget _buildPrescriptionCard(
+    BuildContext context,
+    Prescription prescription,
+    WidgetRef ref,
+  ) {
     final date = DateFormat('MMM dd, yyyy').format(prescription.date);
-    final doctorName = prescription.doctorName?.isNotEmpty == true ? prescription.doctorName : 'No doctor specified';
+    final doctorName = prescription.doctorName?.isNotEmpty == true
+        ? prescription.doctorName
+        : 'No doctor specified';
     final fileType = prescription.isPdf ? 'PDF' : 'Image';
     final fileIcon = prescription.isPdf ? Icons.picture_as_pdf : Icons.image;
-    
-    return Container(
+
+    return GlassCard(
       margin: const EdgeInsets.symmetric(vertical: 1),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-      ),
+      padding: EdgeInsets.zero,
+      borderRadius: 24,
       child: InkWell(
         onTap: () {
           _showPrescriptionDetails(context, prescription, ref);
@@ -788,7 +713,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                  borderRadius: BorderRadius.circular(
+                    AppSpacing.borderRadiusMedium,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: AppTheme.primaryColor.withOpacity(0.3),
@@ -797,14 +724,10 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  fileIcon,
-                  color: AppTheme.onPrimaryColor,
-                  size: 24,
-                ),
+                child: Icon(fileIcon, color: AppTheme.onPrimaryColor, size: 24),
               ),
               const SizedBox(width: AppSpacing.m),
-              
+
               // Prescription Details
               Expanded(
                 child: Column(
@@ -819,17 +742,19 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                             children: [
                               Text(
                                 'Prescription Document',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppTheme.onSurfaceColor,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: AppTheme.onSurfaceColor,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
                                 date,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.onSurfaceVariant,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: AppTheme.onSurfaceVariant,
+                                    ),
                               ),
                             ],
                           ),
@@ -840,12 +765,12 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                             vertical: AppSpacing.xs,
                           ),
                           decoration: BoxDecoration(
-                            color: fileType == 'PDF' 
+                            color: fileType == 'PDF'
                                 ? const Color(0xFFF44336).withOpacity(0.1)
                                 : const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: fileType == 'PDF' 
+                              color: fileType == 'PDF'
                                   ? const Color(0xFFF44336).withOpacity(0.3)
                                   : const Color(0xFF4CAF50).withOpacity(0.3),
                               width: 1,
@@ -853,19 +778,20 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                           ),
                           child: Text(
                             fileType,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: fileType == 'PDF' 
-                                  ? const Color(0xFFF44336)
-                                  : const Color(0xFF4CAF50),
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: fileType == 'PDF'
+                                      ? const Color(0xFFF44336)
+                                      : const Color(0xFF4CAF50),
+                                  fontWeight: FontWeight.w700,
+                                ),
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: AppSpacing.m),
-                    
+
                     // Doctor Info
                     Row(
                       children: [
@@ -873,8 +799,9 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: AppTheme.secondaryColor,
+                            color: AppTheme.glassSurfaceStrong,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.outlineVariant),
                           ),
                           child: Icon(
                             Icons.person_outline,
@@ -889,17 +816,19 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                             children: [
                               Text(
                                 'Doctor',
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: AppTheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: AppTheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                               Text(
                                 doctorName!,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.onSurfaceColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppTheme.onSurfaceColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -908,15 +837,18 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    
+
                     // Notes (if available)
                     if (prescription.notes?.isNotEmpty == true) ...[
                       const SizedBox(height: AppSpacing.m),
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.m),
                         decoration: BoxDecoration(
-                          color: AppTheme.secondaryColor,
-                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                          color: AppTheme.glassSurfaceStrong,
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.borderRadiusSmall,
+                          ),
+                          border: Border.all(color: AppTheme.outlineVariant),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -933,17 +865,21 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                                 children: [
                                   Text(
                                     'Notes',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: AppTheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     prescription.notes!,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppTheme.onSurfaceColor,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppTheme.onSurfaceColor,
+                                        ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -954,7 +890,7 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                         ),
                       ),
                     ],
-                    
+
                     // File Info and Actions
                     const SizedBox(height: AppSpacing.m),
                     Row(
@@ -963,9 +899,8 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             prescription.filePath.split('/').last,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppTheme.onSurfaceVariant),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -986,7 +921,11 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                                 ),
                               ),
                               onPressed: () {
-                                _showPrescriptionDetails(context, prescription, ref);
+                                _showPrescriptionDetails(
+                                  context,
+                                  prescription,
+                                  ref,
+                                );
                               },
                               tooltip: 'View Details',
                             ),
@@ -1004,7 +943,11 @@ class PrescriptionListScreenNew extends ConsumerWidget {
                                 ),
                               ),
                               onPressed: () {
-                                _showDeleteDialog(context, prescription.id, ref);
+                                _showDeleteDialog(
+                                  context,
+                                  prescription.id,
+                                  ref,
+                                );
                               },
                               tooltip: 'Delete',
                             ),
@@ -1022,419 +965,463 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     );
   }
 
-  void _showPrescriptionDetails(BuildContext context, Prescription prescription, WidgetRef ref) {
+  void _showPrescriptionDetails(
+    BuildContext context,
+    Prescription prescription,
+    WidgetRef ref,
+  ) {
     final date = DateFormat('MMMM dd, yyyy').format(prescription.date);
     final time = DateFormat('h:mm a').format(prescription.date);
-    final fileType = prescription.filePath.endsWith('.pdf') ? 'PDF Document' : 'Image File';
-    final fileIcon = prescription.filePath.endsWith('.pdf') ? Icons.picture_as_pdf : Icons.image;
-    final fileSize = prescription.fileSize != null 
-        ? '${prescription.fileSize!.toStringAsFixed(1)} KB' 
+    final fileType = prescription.filePath.endsWith('.pdf')
+        ? 'PDF Document'
+        : 'Image File';
+    final fileIcon = prescription.filePath.endsWith('.pdf')
+        ? Icons.picture_as_pdf
+        : Icons.image;
+    final fileSize = prescription.fileSize != null
+        ? '${prescription.fileSize!.toStringAsFixed(1)} KB'
         : 'Unknown size';
-    
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surfaceColor,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppSpacing.borderRadiusLarge),
-          topRight: Radius.circular(AppSpacing.borderRadiusLarge),
-        ),
-      ),
       builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.85,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.l),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with drag indicator
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.onSurfaceVariant.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.l),
-                    
-                    // Prescription title
-                    Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppTheme.primaryColor,
-                                AppTheme.primaryColor.withOpacity(0.8),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryColor.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            fileIcon,
-                            color: AppTheme.onPrimaryColor,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.m),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Prescription Details',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: AppTheme.onSurfaceColor,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                'Uploaded on $date at $time',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.l),
-                    
-                    // Details Grid
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 3,
-                      mainAxisSpacing: AppSpacing.m,
-                      crossAxisSpacing: AppSpacing.m,
-                      children: [
-                        _buildDetailCard(
-                          context,
-                          'File Type',
-                          fileType,
-                          Icons.insert_drive_file,
-                        ),
-                        _buildDetailCard(
-                          context,
-                          'File Size',
-                          fileSize,
-                          Icons.storage,
-                        ),
-                        _buildDetailCard(
-                          context,
-                          'Date',
-                          date,
-                          Icons.calendar_today,
-                        ),
-                        _buildDetailCard(
-                          context,
-                          'Time',
-                          time,
-                          Icons.access_time,
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.l),
-                    
-                    // Doctor Information
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.l),
-                      decoration: BoxDecoration(
-                        color: AppTheme.secondaryColor,
-                        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Doctor Information',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppTheme.onSurfaceColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-                          _buildDetailRow(
-                            context,
-                            'Name',
-                            prescription.doctorName?.isNotEmpty == true 
-                                ? 'Dr. ${prescription.doctorName!}'
-                                : 'Not specified',
-                            Icons.person,
-                          ),
-                          if (prescription.clinicName?.isNotEmpty == true) ...[
-                            const SizedBox(height: AppSpacing.s),
-                            _buildDetailRow(
-                              context,
-                              'Clinic',
-                              prescription.clinicName!,
-                              Icons.business,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    
-                    // Notes Section
-                    if (prescription.notes?.isNotEmpty == true) ...[
-                      const SizedBox(height: AppSpacing.l),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.l),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor,
-                          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                          border: Border.all(
-                            color: AppTheme.outlineVariant,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.note,
-                                  color: AppTheme.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: AppSpacing.s),
-                                Text(
-                                  'Notes',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppTheme.onSurfaceColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.m),
-                            Text(
-                              prescription.notes!,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppTheme.onSurfaceColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    
-                    const SizedBox(height: AppSpacing.l),
-                    
-                    // File Information
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.l),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
-                        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                        border: Border.all(
-                          color: AppTheme.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'File Information',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppTheme.onSurfaceColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-                          _buildDetailRow(
-                            context,
-                            'File Name',
-                            prescription.filePath.split('/').last,
-                            Icons.description,
-                          ),
-                          const SizedBox(height: AppSpacing.s),
-                          _buildDetailRow(
-                            context,
-                            'File Path',
-                            prescription.filePath,
-                            Icons.folder_open,
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.l),
-                    
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _showDeleteDialog(context, prescription.id, ref);
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                              side: BorderSide(color: AppTheme.errorColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  color: AppTheme.errorColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: AppSpacing.s),
-                                Text(
-                                  'Delete',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.errorColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.m),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              scaffoldMessenger.showSnackBar(
-                                SnackBar(
-                                  content: Text('Opening ${prescription.fileName}...'),
-                                  backgroundColor: AppTheme.primaryColor,
-                                ),
-                              );
-                              
-                              try {
-                                // Open the file using the file path
-                                final result = await OpenFile.open(prescription.filePath);
-                                
-                                if (result.type != ResultType.done) {
-                                  // Show error message if file couldn't be opened
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to open file: ${result.message}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                // Show error message if an exception occurs
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error opening file: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
-                              foregroundColor: AppTheme.onPrimaryColor,
-                              padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.visibility, size: 20),
-                                const SizedBox(width: AppSpacing.s),
-                                Text(
-                                  'View File',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.onPrimaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.xxl),
-                  ],
-                ),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.glassSurfaceStrong,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: AppTheme.outlineColor),
               ),
-            );
-          },
+              child: DraggableScrollableSheet(
+                expand: false,
+                initialChildSize: 0.85,
+                minChildSize: 0.5,
+                maxChildSize: 0.95,
+                builder: (context, scrollController) {
+                  return SingleChildScrollView(
+                    controller: scrollController,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.l),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header with drag indicator
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: AppTheme.outlineColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.l),
+
+                          // Prescription title
+                          Row(
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppTheme.primaryColor,
+                                      AppTheme.primaryColor.withOpacity(0.8),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.borderRadiusMedium,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.primaryColor.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  fileIcon,
+                                  color: AppTheme.onPrimaryColor,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.m),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Prescription Details',
+                                      style: Theme.of(context).textTheme.headlineSmall
+                                          ?.copyWith(
+                                            color: AppTheme.onSurfaceColor,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      'Uploaded on $date at $time',
+                                      style: Theme.of(context).textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: AppSpacing.l),
+
+                          // Details Grid
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            childAspectRatio: 1.8,
+                            mainAxisSpacing: AppSpacing.m,
+                            crossAxisSpacing: AppSpacing.m,
+                            padding: EdgeInsets.zero,
+                            children: [
+                              _buildDetailCard(
+                                context,
+                                'File Type',
+                                fileType,
+                                Icons.insert_drive_file,
+                              ),
+                              _buildDetailCard(
+                                context,
+                                'File Size',
+                                fileSize,
+                                Icons.storage,
+                              ),
+                              _buildDetailCard(
+                                context,
+                                'Date',
+                                date,
+                                Icons.calendar_today,
+                              ),
+                              _buildDetailCard(
+                                context,
+                                'Time',
+                                time,
+                                Icons.access_time,
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: AppSpacing.l),
+
+                          // Doctor Information
+                          GlassCard(
+                            padding: const EdgeInsets.all(AppSpacing.l),
+                            borderRadius: AppSpacing.borderRadiusMedium,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Doctor Information',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: AppTheme.onSurfaceColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                const SizedBox(height: AppSpacing.m),
+                                _buildDetailRow(
+                                  context,
+                                  'Name',
+                                  prescription.doctorName?.isNotEmpty == true
+                                      ? 'Dr. ${prescription.doctorName!}'
+                                      : 'Not specified',
+                                  Icons.person,
+                                ),
+                                if (prescription.clinicName?.isNotEmpty == true) ...[
+                                  const SizedBox(height: AppSpacing.s),
+                                  _buildDetailRow(
+                                    context,
+                                    'Clinic',
+                                    prescription.clinicName!,
+                                    Icons.business,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          // Notes Section
+                          if (prescription.notes?.isNotEmpty == true) ...[
+                            const SizedBox(height: AppSpacing.l),
+                            GlassCard(
+                              padding: const EdgeInsets.all(AppSpacing.l),
+                              borderRadius: AppSpacing.borderRadiusMedium,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.note,
+                                        color: AppTheme.primaryColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: AppSpacing.s),
+                                      Text(
+                                        'Notes',
+                                        style: Theme.of(context).textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: AppTheme.onSurfaceColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.m),
+                                  Text(
+                                    prescription.notes!,
+                                    style: Theme.of(context).textTheme.bodyMedium
+                                        ?.copyWith(color: AppTheme.onSurfaceColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: AppSpacing.l),
+
+                          // File Information
+                          GlassCard(
+                            padding: const EdgeInsets.all(AppSpacing.l),
+                            borderRadius: AppSpacing.borderRadiusMedium,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'File Information',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: AppTheme.onSurfaceColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                const SizedBox(height: AppSpacing.m),
+                                _buildDetailRow(
+                                  context,
+                                  'File Name',
+                                  prescription.filePath.split('/').last,
+                                  Icons.description,
+                                ),
+                                const SizedBox(height: AppSpacing.s),
+                                _buildDetailRow(
+                                  context,
+                                  'File Path',
+                                  prescription.filePath,
+                                  Icons.folder_open,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: AppSpacing.l),
+
+                          // Action Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      _showDeleteDialog(
+                                        context,
+                                        prescription.id,
+                                        ref,
+                                      );
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.m,
+                                    ),
+                                    side: BorderSide(color: AppTheme.errorColor),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.borderRadiusMedium,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.delete_outline,
+                                        color: AppTheme.errorColor,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: AppSpacing.s),
+                                      Text(
+                                        'Delete',
+                                        style: Theme.of(context).textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: AppTheme.errorColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.m),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    final scaffoldMessenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Opening ${prescription.fileName}...',
+                                        ),
+                                        backgroundColor: AppTheme.primaryColor,
+                                      ),
+                                    );
+
+                                    try {
+                                      // Open the file using the file path
+                                      final result = await OpenFile.open(
+                                        prescription.filePath,
+                                      );
+
+                                      if (result.type != ResultType.done) {
+                                        // Show error message if file couldn't be opened
+                                        scaffoldMessenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Failed to open file: ${result.message}',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      // Show error message if an exception occurs
+                                      scaffoldMessenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error opening file: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: AppTheme.onPrimaryColor,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.m,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.borderRadiusMedium,
+                                      ),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.visibility, size: 20),
+                                      const SizedBox(width: AppSpacing.s),
+                                      Text(
+                                        'View File',
+                                        style: Theme.of(context).textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: AppTheme.onPrimaryColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: AppSpacing.xxl),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildDetailCard(BuildContext context, String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+  Widget _buildDetailCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+  ) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.s,
       ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: AppTheme.onSurfaceVariant,
-              ),
+              Icon(icon, size: 14, color: AppTheme.onSurfaceVariant),
               const SizedBox(width: AppSpacing.xs),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppTheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.onSurfaceColor,
-              fontWeight: FontWeight.w500,
+          const SizedBox(height: 6),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onSurfaceColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -1442,15 +1429,16 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     );
   }
 
-  Widget _buildDetailRow(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppTheme.onSurfaceVariant,
-        ),
+        Icon(icon, size: 16, color: AppTheme.onSurfaceVariant),
         const SizedBox(width: AppSpacing.m),
         Expanded(
           child: Column(
@@ -1479,8 +1467,6 @@ class PrescriptionListScreenNew extends ConsumerWidget {
     );
   }
 
-  
-
   bool _isThisMonth(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year && date.month == now.month;
@@ -1488,126 +1474,159 @@ class PrescriptionListScreenNew extends ConsumerWidget {
 
   Future<void> _showSearchDialog(BuildContext context, WidgetRef ref) async {
     final TextEditingController searchController = TextEditingController();
-    
+
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
-          surfaceTintColor: Colors.transparent,
-          title: Text(
-            'Search Prescriptions',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppTheme.onSurfaceColor,
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: AlertDialog(
+            backgroundColor: const Color(0xCC1E293B),
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: AppTheme.outlineColor),
             ),
+            title: Text(
+              'Search Prescriptions',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(color: AppTheme.onSurfaceColor),
+            ),
+            content: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by doctor name or notes...',
+                filled: true,
+                fillColor: const Color(0x14FFFFFF),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppSpacing.borderRadiusSmall,
+                  ),
+                  borderSide: const BorderSide(color: AppTheme.outlineColor),
+                ),
+                contentPadding: const EdgeInsets.all(AppSpacing.m),
+              ),
+              style: TextStyle(color: AppTheme.onSurfaceColor),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.neutralColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final query = searchController.text.trim();
+                  if (query.isNotEmpty) {
+                    // TODO: Implement search functionality
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Searching for "$query"...'),
+                        backgroundColor: AppTheme.primaryColor,
+                      ),
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: AppTheme.onPrimaryColor,
+                  minimumSize: const Size(100, 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Search',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.onPrimaryColor,
+                  ),
+                ),
+              ),
+            ],
           ),
-          content: TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: 'Search by doctor name or notes...',
-              filled: true,
-              fillColor: AppTheme.secondaryColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-                borderSide: const BorderSide(color: AppTheme.outlineColor),
-              ),
-              contentPadding: const EdgeInsets.all(AppSpacing.m),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final query = searchController.text.trim();
-                if (query.isNotEmpty) {
-                  // TODO: Implement search functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Searching for "$query"...'),
-                      backgroundColor: AppTheme.primaryColor,
-                    ),
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: AppTheme.onPrimaryColor,
-                minimumSize: const Size(100, 48),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Search',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onPrimaryColor,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
   }
 
-  Future<void> _showDeleteDialog(BuildContext context, String prescriptionId, WidgetRef ref) async {
+  Future<void> _showDeleteDialog(
+    BuildContext context,
+    String prescriptionId,
+    WidgetRef ref,
+  ) async {
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
-          surfaceTintColor: Colors.transparent,
-          title: Text(
-            'Delete Prescription',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppTheme.onSurfaceColor,
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: AlertDialog(
+            backgroundColor: const Color(0xCC1E293B),
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: AppTheme.outlineColor),
             ),
-          ),
-          content: Text(
-            'Are you sure you want to delete this prescription? This action cannot be undone.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.onSurfaceVariant,
+            title: Text(
+              'Delete Prescription',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(color: AppTheme.errorColor, fontWeight: FontWeight.bold),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
+            content: Text(
+              'Are you sure you want to delete this prescription? This action cannot be undone.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceColor),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.neutralColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await ref.read(prescriptionListProvider.notifier).deletePrescription(prescriptionId);
-                // Invalidate the recent prescriptions provider to refresh the list
-                ref.invalidate(recentPrescriptionsProvider);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.errorColor,
-                foregroundColor: AppTheme.surfaceColor,
-              ),
-              child: Text(
-                'Delete',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.surfaceColor,
+              ElevatedButton(
+                onPressed: () async {
+                  await ref
+                      .read(prescriptionListProvider.notifier)
+                      .deletePrescription(prescriptionId);
+                  // Invalidate the recent prescriptions provider to refresh the list
+                  ref.invalidate(recentPrescriptionsProvider);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.l,
+                    vertical: AppSpacing.m,
+                  ),
+                ),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

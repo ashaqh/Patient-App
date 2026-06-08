@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,7 @@ import '../../core/constants/spacing_constants.dart';
 import '../../core/utils/chart_axis_utils.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../providers/vital_sign_provider.dart';
+import '../widgets/common/glass_widgets.dart';
 import '../../domain/entities/vital_sign.dart';
 import 'add_vital_sign_screen.dart';
 
@@ -51,9 +53,10 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                   ref.read(vitalSignListProvider.notifier).setFilter(filter);
                 }
               },
-              backgroundColor: isSelected 
-                  ? AppTheme.primaryColor.withOpacity(0.1)
-                  : null,
+              backgroundColor: isSelected
+                  ? AppTheme.primaryColor
+                      .withValues(alpha: 0.18)
+                  : const Color(0x14FFFFFF),
               selectedColor: AppTheme.primaryColor,
               labelStyle: TextStyle(
                 color: isSelected ? AppTheme.onPrimaryColor : null,
@@ -89,11 +92,11 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
       controller: _searchController,
       decoration: InputDecoration(
         hintText: 'Search vital signs...',
-        prefixIcon: const Icon(Icons.search),
-        border: const OutlineInputBorder(),
+        prefixIcon: const Icon(Icons.search_rounded),
+        border: InputBorder.none,
         suffixIcon: _searchController.text.isNotEmpty
             ? IconButton(
-                icon: const Icon(Icons.clear),
+                icon: const Icon(Icons.clear_rounded),
                 onPressed: () {
                   _searchController.clear();
                   ref.read(vitalSignListProvider.notifier).setSearchQuery('');
@@ -541,6 +544,8 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
       child: ListTile(
         contentPadding: const EdgeInsets.all(AppSpacing.m),
+        minVerticalPadding: AppSpacing.s,
+        isThreeLine: true,
         leading: Container(
           width: 50,
           height: 50,
@@ -1126,26 +1131,51 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(vitalSignListProvider);
     final vitalSigns = ref.watch(filteredVitalSignsProvider);
-    
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Vital Signs'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: AppTheme.onPrimaryColor,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'Vital Signs',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurfaceColor,
+          ),
+        ),
         actions: [
-],
+          IconButton(
+            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: state.isLoading
-          ? _buildLoadingState()
+          ? Center(
+              child: GlassCard(
+                padding: const EdgeInsets.all(AppSpacing.l),
+                child: const CircularProgressIndicator(),
+              ),
+            )
           : state.error != null
               ? _buildErrorState(state.error!)
               : Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(AppSpacing.m),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenHorizontal,
+                        AppSpacing.s,
+                        AppSpacing.screenHorizontal,
+                        AppSpacing.m,
+                      ),
                       child: Column(
                         children: [
-                          _buildSearchField(),
+                          GlassCard(
+                            padding: const EdgeInsets.all(AppSpacing.xs),
+                            borderRadius: 20,
+                            child: _buildSearchField(),
+                          ),
                           const SizedBox(height: 12),
                           _buildFilterChips(),
                         ],
@@ -1156,7 +1186,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
                     ),
                   ],
                 ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GradientFab(
         onPressed: () {
           Navigator.push(
             context,
@@ -1165,12 +1195,7 @@ class _VitalSignListScreenState extends ConsumerState<VitalSignListScreen> {
             ),
           );
         },
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: AppTheme.onPrimaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        ),
-        child: const Icon(Icons.add, size: 28),
+        icon: Icons.add,
       ),
     );
   }

@@ -13,6 +13,17 @@ class AuditLogDataSource {
   AuditLogDataSource(this._databaseHelper)
       : _encryptionService = DatabaseEncryptionService();
 
+  Future<Database> get database async => _databaseHelper.database;
+
+  Future<List<Map<String, dynamic>>> decryptAuditLogs(List<Map<String, dynamic>> maps) {
+    return _encryptionService.batchDecryptAuditLogs(maps);
+  }
+
+  Future<Map<String, dynamic>> encryptAuditLog(Map<String, dynamic> auditLogMap) {
+    return _encryptionService.encryptAuditLog(auditLogMap);
+  }
+
+
   // Create a new audit log entry
   Future<String> createAuditLog(AuditLog auditLog) async {
     final db = await _databaseHelper.database;

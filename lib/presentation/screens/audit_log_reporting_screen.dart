@@ -419,6 +419,7 @@ class _AuditLogReportingScreenState
       childAspectRatio: 1.5,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
+      padding: EdgeInsets.zero,
       children: [
         _buildSummaryCard(
           'Total Events',

@@ -14,8 +14,8 @@ void main() {
   });
 
   test('Phase 1: Database Constants Exist', () {
-    expect(DatabaseConstants.databaseName, equals('carevault.db'));
-    expect(DatabaseConstants.databaseVersion, equals(1));
+    expect(DatabaseConstants.databaseName, startsWith('carevault_test_'));
+    expect(DatabaseConstants.databaseVersion, equals(7));
     expect(DatabaseConstants.tableMedicines, equals('medicines'));
     expect(DatabaseConstants.tablePrescriptions, equals('prescriptions'));
     expect(DatabaseConstants.tableReminderLogs, equals('reminder_logs'));

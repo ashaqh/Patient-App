@@ -201,27 +201,64 @@ class ReminderScheduler {
     required DateTime scheduledTime,
     required ReminderStatus status,
     String? notes,
+    bool enforceManualLoggingWindow = false,
   }) async {
     try {
+      final now = DateTime.now();
+
       // Find the reminder log for this medicine and time
       final reminderLogs = await _reminderLogRepository.getReminderLogsByMedicineId(medicineId);
       
       for (final log in reminderLogs) {
         if (_isSameTime(log.scheduledTime, scheduledTime)) {
+          if (enforceManualLoggingWindow && !log.isManualLoggingAvailable(now: now)) {
+            throw StateError(
+              'Manual logging is only available from 30 minutes before the dose until midnight.',
+            );
+          }
+
+          if (log.status != ReminderStatus.pending) {
+            throw StateError(
+              'This dose has already been logged as ${log.status.displayName.toLowerCase()}.',
+            );
+          }
+
           final updatedLog = log.copyWith(
             status: status,
-            actualTime: DateTime.now(),
+            actualTime: now,
             notes: notes,
           );
           
           await _reminderLogRepository.updateReminderLog(updatedLog);
           ErrorUtils.logInfo('Updated reminder status to: ${status.displayName}');
-          break;
+          return;
         }
       }
+
+      throw StateError('Unable to find the scheduled dose to update.');
     } catch (e) {
       ErrorUtils.logInfo('Error updating reminder status: $e');
+      rethrow;
     }
+  }
+
+  Future<void> markReminderManually({
+    required String medicineId,
+    required DateTime scheduledTime,
+    required ReminderStatus status,
+    String? notes,
+  }) async {
+    if (status != ReminderStatus.taken && status != ReminderStatus.missed) {
+      throw ArgumentError('Manual logging only supports taken or missed statuses.');
+    }
+
+    await updateReminderStatus(
+      medicineId: medicineId,
+      scheduledTime: scheduledTime,
+      status: status,
+      notes: notes,
+      enforceManualLoggingWindow: true,
+    );
   }
 
   // Mark reminder as taken
@@ -250,6 +287,33 @@ class ReminderScheduler {
       status: ReminderStatus.skipped,
       notes: notes,
     );
+  }
+
+  // Expire any pending reminders whose manual logging window closed at midnight.
+  Future<void> expireManualLoggingWindows({DateTime? now}) async {
+    try {
+      final effectiveNow = now ?? DateTime.now();
+      final pendingReminders =
+          await _reminderLogRepository.getReminderLogsByStatus(ReminderStatus.pending);
+
+      for (final reminder in pendingReminders) {
+        if (!reminder.isManualLoggingExpired(now: effectiveNow)) {
+          continue;
+        }
+
+        final updatedReminder = reminder.copyWith(
+          status: ReminderStatus.missed,
+          notes: 'Manual logging window expired at midnight',
+        );
+
+        await _reminderLogRepository.updateReminderLog(updatedReminder);
+        ErrorUtils.logInfo(
+          'Expired manual logging window for ${reminder.medicineName} at ${reminder.scheduledTime.toIso8601String()}',
+        );
+      }
+    } catch (e) {
+      ErrorUtils.logInfo('Error expiring manual logging windows: $e');
+    }
   }
 
   // Snooze reminder (reschedule for later)
@@ -301,21 +365,7 @@ class ReminderScheduler {
   // Check for missed reminders
   Future<void> checkForMissedReminders() async {
     try {
-      final pendingReminders = await _reminderLogRepository.getReminderLogsByStatus(ReminderStatus.pending);
-      final now = DateTime.now();
-
-      for (final reminder in pendingReminders) {
-        // If reminder was scheduled for more than 30 minutes ago, mark as missed
-        if (reminder.scheduledTime.isBefore(now.subtract(const Duration(minutes: 30)))) {
-          final updatedReminder = reminder.copyWith(
-            status: ReminderStatus.missed,
-            notes: 'Automatically marked as missed',
-          );
-          
-          await _reminderLogRepository.updateReminderLog(updatedReminder);
-          ErrorUtils.logInfo('Marked missed reminder: ${reminder.medicineName} at ${reminder.scheduledTime.toIso8601String()}');
-        }
-      }
+      await expireManualLoggingWindows();
     } catch (e) {
       ErrorUtils.logInfo('Error checking for missed reminders: $e');
     }

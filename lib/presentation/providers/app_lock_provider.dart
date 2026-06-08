@@ -320,6 +320,23 @@ class AppLockNotifier extends StateNotifier<AppLockState> {
     }
   }
   
+  // Reset all security settings
+  Future<bool> resetSettings() async {
+    try {
+      state = state.copyWith(isLoading: true);
+
+      await _service.resetAllSettings();
+      await loadSettings();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to reset settings: $e',
+      );
+      return false;
+    }
+  }
+
   // Clear error
   void clearError() {
     state = state.copyWith(error: null);

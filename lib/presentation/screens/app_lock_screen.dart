@@ -5,6 +5,7 @@ import '../../core/widgets/elderly_friendly_button.dart';
 import '../../core/services/app_lock_service.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/constants/spacing_constants.dart';
+import '../widgets/common/glass_widgets.dart';
 
 class AppLockScreen extends ConsumerStatefulWidget {
   const AppLockScreen({super.key});
@@ -54,20 +55,21 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
     final lockType = appLockState.settings?['type'] ?? 'none';
     final biometricEnabled = appLockState.settings?['biometric_enabled'] == true;
     
-    return Scaffold(
-      backgroundColor: AppTheme.secondaryColor,
-      body: SafeArea(
-        child: Center(
-          child: CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
+    return GradientOrbBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Center(
+            child: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                       // App Icon and Title
                       Container(
                         width: AppSpacing.iconSizeLarge * 2,
@@ -198,48 +200,40 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
   
   Widget _buildPINInput() {
     return Column(
       children: [
-        Container(
+        GlassCard(
           padding: const EdgeInsets.all(AppSpacing.m),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-            border: Border.all(width: 2, color: AppTheme.outlineColor),
-          ),
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _pinController,
-                obscureText: !_showPin,
-                decoration: InputDecoration(
-                  labelText: 'Enter PIN',
-                  border: InputBorder.none,
-                  prefixIcon: Icon(Icons.pin, color: AppTheme.neutralColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _showPin ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.neutralColor,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showPin = !_showPin;
-                      });
-                    },
-                  ),
+          borderRadius: 24,
+          child: TextFormField(
+            controller: _pinController,
+            obscureText: !_showPin,
+            decoration: InputDecoration(
+              labelText: 'Enter PIN',
+              prefixIcon: Icon(Icons.pin, color: AppTheme.neutralColor),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPin ? Icons.visibility_off : Icons.visibility,
+                  color: AppTheme.neutralColor,
                 ),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: AppTheme.onSurfaceColor,
-                  letterSpacing: 8.0,
-                ),
+                onPressed: () {
+                  setState(() {
+                    _showPin = !_showPin;
+                  });
+                },
               ),
-            ],
+            ),
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: AppTheme.onSurfaceColor,
+              letterSpacing: 8.0,
+            ),
           ),
         ),
         
@@ -279,40 +273,31 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   Widget _buildPasswordInput() {
     return Column(
       children: [
-        Container(
+        GlassCard(
           padding: const EdgeInsets.all(AppSpacing.m),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-            border: Border.all(width: 2, color: AppTheme.outlineColor),
-          ),
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _passwordController,
-                obscureText: !_showPassword,
-                decoration: InputDecoration(
-                  labelText: 'Enter Password',
-                  border: InputBorder.none,
-                  prefixIcon: Icon(Icons.password, color: AppTheme.neutralColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _showPassword ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.neutralColor,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showPassword = !_showPassword;
-                      });
-                    },
-                  ),
+          borderRadius: 24,
+          child: TextFormField(
+            controller: _passwordController,
+            obscureText: !_showPassword,
+            decoration: InputDecoration(
+              labelText: 'Enter Password',
+              prefixIcon: Icon(Icons.password, color: AppTheme.neutralColor),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPassword ? Icons.visibility_off : Icons.visibility,
+                  color: AppTheme.neutralColor,
                 ),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppTheme.onSurfaceColor,
-                ),
+                onPressed: () {
+                  setState(() {
+                    _showPassword = !_showPassword;
+                  });
+                },
               ),
-            ],
+            ),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppTheme.onSurfaceColor,
+            ),
           ),
         ),
         
@@ -381,186 +366,180 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   }
   
   Widget _buildHelpSection(String lockType) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        side: const BorderSide(width: 1, color: AppTheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Need Help?',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.onSurfaceColor,
-              ),
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      borderRadius: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Need Help?',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppTheme.onSurfaceColor,
             ),
-            
-            const SizedBox(height: AppSpacing.m),
-            
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.secondaryColor,
-                borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-              ),
-              child: Column(
-                children: [
-                  if (lockType == AppLockService.lockTypePIN)
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      leading: Icon(
-                        Icons.info,
-                        size: AppSpacing.iconSizeSmall,
-                        color: AppTheme.primaryColor,
-                      ),
-                      title: Text(
-                        'Enter the 4-6 digit PIN you created',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.onSurfaceColor,
-                        ),
-                      ),
-                      dense: true,
-                    ),
-                  
-                  if (lockType == AppLockService.lockTypePIN && lockType == AppLockService.lockTypePassword)
-                    Divider(
-                      height: 1,
-                      color: AppTheme.outlineVariant,
-                      thickness: 1,
-                    ),
-                  
-                  if (lockType == AppLockService.lockTypePassword)
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      leading: Icon(
-                        Icons.info,
-                        size: AppSpacing.iconSizeSmall,
-                        color: AppTheme.primaryColor,
-                      ),
-                      title: Text(
-                        'Enter the password you created (minimum 6 characters)',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.onSurfaceColor,
-                        ),
-                      ),
-                      dense: true,
-                    ),
-                  
-                  if ((lockType == AppLockService.lockTypePIN || lockType == AppLockService.lockTypePassword) && lockType == AppLockService.lockTypeBiometric)
-                    Divider(
-                      height: 1,
-                      color: AppTheme.outlineVariant,
-                      thickness: 1,
-                    ),
-                  
-                  if (lockType == AppLockService.lockTypeBiometric)
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      leading: Icon(
-                        Icons.info,
-                        size: AppSpacing.iconSizeSmall,
-                        color: AppTheme.primaryColor,
-                      ),
-                      title: Text(
-                        'Use your fingerprint or face to unlock the app',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.onSurfaceColor,
-                        ),
-                      ),
-                      dense: true,
-                    ),
-                  
-                  Divider(
-                    height: 1,
-                    color: AppTheme.outlineVariant,
-                    thickness: 1,
-                  ),
-                  
+          ),
+          
+          const SizedBox(height: AppSpacing.m),
+          
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0x14FFFFFF),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                if (lockType == AppLockService.lockTypePIN)
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.m,
                       vertical: AppSpacing.s,
                     ),
                     leading: Icon(
-                      Icons.timer,
+                      Icons.info,
                       size: AppSpacing.iconSizeSmall,
                       color: AppTheme.primaryColor,
                     ),
                     title: Text(
-                      'App auto-locks based on your security settings',
+                      'Enter the 4-6 digit PIN you created',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.onSurfaceColor,
                       ),
                     ),
                     dense: true,
                   ),
-                  
+                
+                if (lockType == AppLockService.lockTypePIN && lockType == AppLockService.lockTypePassword)
                   Divider(
                     height: 1,
                     color: AppTheme.outlineVariant,
                     thickness: 1,
                   ),
-                  
+                
+                if (lockType == AppLockService.lockTypePassword)
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.m,
                       vertical: AppSpacing.s,
                     ),
                     leading: Icon(
-                      Icons.settings,
+                      Icons.info,
                       size: AppSpacing.iconSizeSmall,
                       color: AppTheme.primaryColor,
                     ),
                     title: Text(
-                      'You can change security settings after unlocking',
+                      'Enter the password you created (minimum 6 characters)',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.onSurfaceColor,
                       ),
                     ),
                     dense: true,
                   ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: AppSpacing.l),
-            
-            TextButton(
-              onPressed: () {
-                _showSecurityHelp();
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.help_outline,
+                
+                if ((lockType == AppLockService.lockTypePIN || lockType == AppLockService.lockTypePassword) && lockType == AppLockService.lockTypeBiometric)
+                  Divider(
+                    height: 1,
+                    color: AppTheme.outlineVariant,
+                    thickness: 1,
+                  ),
+                
+                if (lockType == AppLockService.lockTypeBiometric)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.m,
+                      vertical: AppSpacing.s,
+                    ),
+                    leading: Icon(
+                      Icons.info,
+                      size: AppSpacing.iconSizeSmall,
+                      color: AppTheme.primaryColor,
+                    ),
+                    title: Text(
+                      'Use your fingerprint or face to unlock the app',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceColor,
+                      ),
+                    ),
+                    dense: true,
+                  ),
+                
+                Divider(
+                  height: 1,
+                  color: AppTheme.outlineVariant,
+                  thickness: 1,
+                ),
+                
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.m,
+                    vertical: AppSpacing.s,
+                  ),
+                  leading: Icon(
+                    Icons.timer,
+                    size: AppSpacing.iconSizeSmall,
                     color: AppTheme.primaryColor,
                   ),
-                  const SizedBox(width: AppSpacing.s),
-                  Text(
-                    'Learn more about security settings',
+                  title: Text(
+                    'App auto-locks based on your security settings',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
+                      color: AppTheme.onSurfaceColor,
                     ),
                   ),
-                ],
-              ),
+                  dense: true,
+                ),
+                
+                Divider(
+                  height: 1,
+                  color: AppTheme.outlineVariant,
+                  thickness: 1,
+                ),
+                
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.m,
+                    vertical: AppSpacing.s,
+                  ),
+                  leading: Icon(
+                    Icons.settings,
+                    size: AppSpacing.iconSizeSmall,
+                    color: AppTheme.primaryColor,
+                  ),
+                  title: Text(
+                    'You can change security settings after unlocking',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.onSurfaceColor,
+                    ),
+                  ),
+                  dense: true,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          
+          const SizedBox(height: AppSpacing.l),
+          
+          TextButton(
+            onPressed: () {
+              _showSecurityHelp();
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.help_outline,
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Text(
+                  'Learn more about security settings',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -674,11 +653,11 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   Future<void> _showAlternativeOptions() async {
     final result = await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppSpacing.borderRadiusLarge),
-          topRight: Radius.circular(AppSpacing.borderRadiusLarge),
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
       ),
       builder: (context) => SafeArea(
@@ -793,9 +772,11 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.surfaceContainerHighest,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLarge),
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.outlineColor),
         ),
         title: Text(
           'Security Settings Help',

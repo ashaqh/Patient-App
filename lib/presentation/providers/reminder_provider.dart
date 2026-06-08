@@ -55,6 +55,34 @@ class ReminderStatusUpdater {
 
   ReminderStatusUpdater(this._reminderScheduler);
 
+  // Mark reminder as taken with manual confirmation
+  Future<void> markAsTakenManually({
+    required String medicineId,
+    required DateTime scheduledTime,
+    String? notes,
+  }) async {
+    await _reminderScheduler.markReminderManually(
+      medicineId: medicineId,
+      scheduledTime: scheduledTime,
+      status: ReminderStatus.taken,
+      notes: notes,
+    );
+  }
+
+  // Mark reminder as missed with manual confirmation
+  Future<void> markAsMissedManually({
+    required String medicineId,
+    required DateTime scheduledTime,
+    String? notes,
+  }) async {
+    await _reminderScheduler.markReminderManually(
+      medicineId: medicineId,
+      scheduledTime: scheduledTime,
+      status: ReminderStatus.missed,
+      notes: notes,
+    );
+  }
+
   // Mark reminder as taken
   Future<void> markAsTaken({
     required String medicineId,

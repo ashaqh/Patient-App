@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -6,6 +7,7 @@ import '../../core/themes/app_theme.dart';
 import '../../core/constants/spacing_constants.dart';
 import '../../domain/entities/follow_up.dart';
 import '../providers/follow_up_provider.dart';
+import '../widgets/common/glass_widgets.dart';
 import 'add_follow_up_screen_new.dart';
 
 class FollowUpListScreenNew extends ConsumerWidget {
@@ -17,59 +19,47 @@ class FollowUpListScreenNew extends ConsumerWidget {
     final followUpStatsAsync = ref.watch(followUpStatisticsProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryColor,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar
-          SliverAppBar(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: AppTheme.onPrimaryColor,
-            elevation: 0,
-            floating: true,
-            pinned: true,
-            title: Text(
-              'Follow-ups',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.onPrimaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () => _showSearchDialog(context, ref),
-                tooltip: 'Search',
-              ),
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: () => _showFilterDialog(context, ref),
-                tooltip: 'Filter',
-              ),
-            ],
-          ),
-
-          // Main Content
           SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.xl,
+              AppSpacing.screenHorizontal,
+              86 + AppSpacing.xxl,
+            ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Statistics Section
-                _buildStatisticsSection(context, followUpStatsAsync),
+                const SectionHeader(
+                  eyebrow: 'Follow-ups',
+                  title: 'Follow-ups',
+                  subtitle:
+                      'Never miss an important health check or appointment.',
+                ).animate().fadeIn(duration: 300.ms).slideY(begin: .06, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // Quick Filter Chips
-                _buildQuickFilters(context, ref),
+                _buildStatisticsSection(context, followUpStatsAsync)
+                    .animate()
+                    .fadeIn(delay: 80.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // Follow-ups List
-                _buildFollowUpsList(context, ref, followUpListState),
+                _buildQuickFilters(context, ref)
+                    .animate()
+                    .fadeIn(delay: 140.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
+                const SizedBox(height: AppSpacing.l),
+                _buildFollowUpsList(context, ref, followUpListState)
+                    .animate()
+                    .fadeIn(delay: 200.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.xxl),
               ]),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GradientFab(
         onPressed: () {
           Navigator.push(
             context,
@@ -78,17 +68,15 @@ class FollowUpListScreenNew extends ConsumerWidget {
             ),
           );
         },
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: AppTheme.onPrimaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        ),
-        child: const Icon(Icons.add, size: 28),
+        icon: Icons.add,
       ),
     );
   }
 
-  Widget _buildStatisticsSection(BuildContext context, AsyncValue<Map<String, int>> statsAsync) {
+  Widget _buildStatisticsSection(
+    BuildContext context,
+    AsyncValue<Map<String, int>> statsAsync,
+  ) {
     return statsAsync.when(
       data: (stats) {
         final total = stats['total'] ?? 0;
@@ -96,19 +84,9 @@ class FollowUpListScreenNew extends ConsumerWidget {
         final completed = stats['completed'] ?? 0;
         final overdue = stats['overdue'] ?? 0;
 
-        return Container(
+        return GlassCard(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
-            borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+          borderRadius: 28,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -133,6 +111,7 @@ class FollowUpListScreenNew extends ConsumerWidget {
                 childAspectRatio: 1.6,
                 mainAxisSpacing: AppSpacing.m,
                 crossAxisSpacing: AppSpacing.m,
+                padding: EdgeInsets.zero,
                 children: [
                   _buildStatCard(
                     context,
@@ -192,9 +171,9 @@ class FollowUpListScreenNew extends ConsumerWidget {
             const SizedBox(height: AppSpacing.m),
             Text(
               'Error loading statistics',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.errorColor,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.errorColor),
             ),
           ],
         ),
@@ -202,20 +181,18 @@ class FollowUpListScreenNew extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color iconColor, Color backgroundColor) {
-    return Container(
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color iconColor,
+    Color backgroundColor,
+  ) {
+    return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: 22,
+      color: backgroundColor,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,15 +262,50 @@ class FollowUpListScreenNew extends ConsumerWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildFilterChip(context, 'All', 'All', currentFilter, ref, Icons.all_inclusive),
+              _buildFilterChip(
+                context,
+                'All',
+                'All',
+                currentFilter,
+                ref,
+                Icons.all_inclusive,
+              ),
               const SizedBox(width: AppSpacing.s),
-              _buildFilterChip(context, 'Today', 'Today', currentFilter, ref, Icons.today),
+              _buildFilterChip(
+                context,
+                'Today',
+                'Today',
+                currentFilter,
+                ref,
+                Icons.today,
+              ),
               const SizedBox(width: AppSpacing.s),
-              _buildFilterChip(context, 'Upcoming', 'Upcoming', currentFilter, ref, Icons.upcoming),
+              _buildFilterChip(
+                context,
+                'Upcoming',
+                'Upcoming',
+                currentFilter,
+                ref,
+                Icons.upcoming,
+              ),
               const SizedBox(width: AppSpacing.s),
-              _buildFilterChip(context, 'Overdue', 'Overdue', currentFilter, ref, Icons.warning),
+              _buildFilterChip(
+                context,
+                'Overdue',
+                'Overdue',
+                currentFilter,
+                ref,
+                Icons.warning,
+              ),
               const SizedBox(width: AppSpacing.s),
-              _buildFilterChip(context, 'Completed', 'Completed', currentFilter, ref, Icons.check_circle),
+              _buildFilterChip(
+                context,
+                'Completed',
+                'Completed',
+                currentFilter,
+                ref,
+                Icons.check_circle,
+              ),
             ],
           ),
         ),
@@ -301,83 +313,67 @@ class FollowUpListScreenNew extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, String label, String value, String currentFilter, WidgetRef ref, IconData icon) {
+  Widget _buildFilterChip(
+    BuildContext context,
+    String label,
+    String value,
+    String currentFilter,
+    WidgetRef ref,
+    IconData icon,
+  ) {
     final isSelected = currentFilter == value;
-    Color chipColor;
-    Color textColor;
-    
-    if (isSelected) {
-      switch (value) {
-        case 'Today':
-          chipColor = Colors.blue.shade600;
-          textColor = Colors.white;
-          break;
-        case 'Upcoming':
-          chipColor = Colors.blue.shade400;
-          textColor = Colors.white;
-          break;
-        case 'Overdue':
-          chipColor = Colors.orange.shade600;
-          textColor = Colors.white;
-          break;
-        case 'Completed':
-          chipColor = Colors.green.shade600;
-          textColor = Colors.white;
-          break;
-        default:
-          chipColor = AppTheme.primaryColor;
-          textColor = AppTheme.onPrimaryColor;
-      }
-    } else {
-      chipColor = AppTheme.surfaceContainer;
-      textColor = AppTheme.onSurfaceColor;
-    }
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: chipColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: chipColor.withOpacity(0.4),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: InkWell(
-        onTap: () {
-          ref.read(_followUpFilterProvider.notifier).state = value;
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: textColor.withOpacity(0.9),
+    final textColor = isSelected
+        ? AppTheme.onPrimaryColor
+        : AppTheme.onSurfaceVariant;
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: 22,
+      color: AppTheme.glassSurfaceStrong,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: isSelected ? AppTheme.primaryGradient : null,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () =>
+                ref.read(_followUpFilterProvider.notifier).state = value,
+            borderRadius: BorderRadius.circular(22),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.m,
+                vertical: AppSpacing.s,
               ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16, color: textColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: textColor,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFollowUpsList(BuildContext context, WidgetRef ref, FollowUpListState followUpListState) {
+  Widget _buildFollowUpsList(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUpListState followUpListState,
+  ) {
     if (followUpListState.isLoading) {
       return Container(
         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -398,13 +394,14 @@ class FollowUpListScreenNew extends ConsumerWidget {
             const SizedBox(height: AppSpacing.m),
             Text(
               'Error loading follow-ups',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.errorColor,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppTheme.errorColor),
             ),
             const SizedBox(height: AppSpacing.m),
             ElevatedButton(
-              onPressed: () => ref.read(followUpListProvider.notifier).refresh(),
+              onPressed: () =>
+                  ref.read(followUpListProvider.notifier).refresh(),
               style: AppTheme.primaryButtonStyle,
               child: const Text('Retry'),
             ),
@@ -418,18 +415,26 @@ class FollowUpListScreenNew extends ConsumerWidget {
 
     switch (currentFilter) {
       case 'Today':
-        filteredFollowUps = followUpListState.followUps.where((f) => f.isToday).toList();
+        filteredFollowUps = followUpListState.followUps
+            .where((f) => f.isToday)
+            .toList();
         break;
       case 'Upcoming':
-        filteredFollowUps = followUpListState.followUps.where((f) => f.isUpcoming).toList();
+        filteredFollowUps = followUpListState.followUps
+            .where((f) => f.isUpcoming)
+            .toList();
         break;
       case 'Overdue':
-        filteredFollowUps = followUpListState.followUps.where((f) => f.isOverdue).toList();
+        filteredFollowUps = followUpListState.followUps
+            .where((f) => f.isOverdue)
+            .toList();
         break;
       case 'Completed':
-        filteredFollowUps = followUpListState.followUps.where((f) => f.isCompleted).toList();
+        filteredFollowUps = followUpListState.followUps
+            .where((f) => f.isCompleted)
+            .toList();
         break;
-      default: // 'All'
+      default:
         filteredFollowUps = followUpListState.followUps;
     }
 
@@ -444,16 +449,18 @@ class FollowUpListScreenNew extends ConsumerWidget {
       children: [
         Text(
           'Follow-ups (${filteredFollowUps.length})',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppTheme.onSurfaceColor,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(color: AppTheme.onSurfaceColor),
         ),
         const SizedBox(height: AppSpacing.m),
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
           itemCount: filteredFollowUps.length,
-          separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.s),
+          separatorBuilder: (context, index) =>
+              const SizedBox(height: AppSpacing.s),
           itemBuilder: (context, index) {
             final followUp = filteredFollowUps[index];
             return _buildFollowUpCard(context, ref, followUp);
@@ -463,56 +470,49 @@ class FollowUpListScreenNew extends ConsumerWidget {
     );
   }
 
-  Widget _buildFollowUpCard(BuildContext context, WidgetRef ref, FollowUp followUp) {
+  Widget _buildFollowUpCard(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUp followUp,
+  ) {
     final statusColor = _getStatusColor(followUp.status);
     final urgencyColor = _getUrgencyColor(followUp.urgencyLevel);
     final isUrgent = followUp.urgencyLevel >= 2;
     final isOverdue = followUp.isOverdue;
 
-    return GestureDetector(
-      onTap: () => _showFollowUpDetails(context, ref, followUp),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.m),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(
-            color: isUrgent 
-                ? urgencyColor.withOpacity(0.4) 
-                : isOverdue 
-                  ? Colors.orange.withOpacity(0.3)
-                  : AppTheme.outlineVariant,
-            width: isUrgent || isOverdue ? 2 : 1,
-          ),
-        ),
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.m),
+      padding: EdgeInsets.zero,
+      borderRadius: AppSpacing.borderRadiusMedium,
+      color: isUrgent
+          ? urgencyColor.withValues(alpha: 0.12)
+          : isOverdue
+          ? AppTheme.warningColor.withValues(alpha: 0.12)
+          : null,
+      child: InkWell(
+        onTap: () => _showFollowUpDetails(context, ref, followUp),
+        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with status indicator
             Container(
               height: 4,
               decoration: BoxDecoration(
-                color: statusColor,
+                gradient: LinearGradient(
+                  colors: [statusColor, AppTheme.tertiaryColor],
+                ),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(AppSpacing.borderRadiusMedium),
                   topRight: Radius.circular(AppSpacing.borderRadiusMedium),
                 ),
               ),
             ),
-            
             Padding(
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Title row with status badge
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,15 +523,15 @@ class FollowUpListScreenNew extends ConsumerWidget {
                           children: [
                             Text(
                               followUp.title,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.onSurfaceColor,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.onSurfaceColor,
+                                  ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: AppSpacing.xs),
-                            // Date and time in a single line
                             Row(
                               children: [
                                 Icon(
@@ -542,10 +542,11 @@ class FollowUpListScreenNew extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   DateFormat('MMM d').format(followUp.date),
-                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: AppTheme.onSurfaceColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: Theme.of(context).textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: AppTheme.onSurfaceColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                 ),
                                 const SizedBox(width: 8),
                                 Icon(
@@ -556,10 +557,11 @@ class FollowUpListScreenNew extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   DateFormat('h:mm a').format(followUp.date),
-                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: AppTheme.onSurfaceColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: Theme.of(context).textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: AppTheme.onSurfaceColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                 ),
                               ],
                             ),
@@ -567,11 +569,16 @@ class FollowUpListScreenNew extends ConsumerWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
+                          color: statusColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: statusColor.withOpacity(0.3)),
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -583,34 +590,31 @@ class FollowUpListScreenNew extends ConsumerWidget {
                             const SizedBox(width: 4),
                             Text(
                               followUp.status.displayName,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: AppSpacing.m),
-                  
-                  // Details section
-                  if (followUp.doctorName != null || followUp.clinicName != null)
+                  if (followUp.doctorName != null ||
+                      followUp.clinicName != null)
                     _buildCardDetailRow(
                       context,
                       Icons.person_outline,
                       '${followUp.doctorName ?? ''}${followUp.clinicName != null ? ' • ${followUp.clinicName}' : ''}',
                     ),
-                  
                   if (followUp.location != null)
                     _buildCardDetailRow(
                       context,
                       Icons.location_on_outlined,
                       followUp.location!,
                     ),
-                  
                   if (followUp.notes != null && followUp.notes!.isNotEmpty)
                     _buildCardDetailRow(
                       context,
@@ -618,43 +622,46 @@ class FollowUpListScreenNew extends ConsumerWidget {
                       followUp.notes!,
                       maxLines: 2,
                     ),
-                  
                   const SizedBox(height: AppSpacing.m),
-                  
-                  // Footer with actions and urgency indicator
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Urgency indicator
-                      if (followUp.urgencyLevel > 0 && followUp.status == FollowUpStatus.scheduled)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: urgencyColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: urgencyColor.withOpacity(0.4)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _getUrgencyIcon(followUp.urgencyLevel),
-                                size: 12,
-                                color: urgencyColor,
+                      if (followUp.urgencyLevel > 0 &&
+                          followUp.status == FollowUpStatus.scheduled)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: urgencyColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: urgencyColor.withOpacity(0.4),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _getUrgencyText(followUp),
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getUrgencyIcon(followUp.urgencyLevel),
+                                  size: 12,
                                   color: urgencyColor,
-                                  fontWeight: FontWeight.w700,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                Text(
+                                  _getUrgencyText(followUp),
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: urgencyColor,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      
-                      // Action buttons
                       Row(
                         children: [
                           if (followUp.status == FollowUpStatus.scheduled)
@@ -662,17 +669,27 @@ class FollowUpListScreenNew extends ConsumerWidget {
                               icon: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
+                                  color: AppTheme.successColor.withValues(
+                                    alpha: 0.16,
+                                  ),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.green.shade100),
+                                  border: Border.all(
+                                    color: AppTheme.successColor.withValues(
+                                      alpha: 0.38,
+                                    ),
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.check_circle,
                                   size: 20,
-                                  color: Colors.green.shade700,
+                                  color: AppTheme.successColor,
                                 ),
                               ),
-                              onPressed: () => _confirmCompleteFollowUp(context, ref, followUp),
+                              onPressed: () => _confirmCompleteFollowUp(
+                                context,
+                                ref,
+                                followUp,
+                              ),
                               tooltip: 'Mark as Completed',
                             ),
                           IconButton(
@@ -681,7 +698,9 @@ class FollowUpListScreenNew extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: AppTheme.primaryColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+                                border: Border.all(
+                                  color: AppTheme.primaryColor.withOpacity(0.2),
+                                ),
                               ),
                               child: Icon(
                                 Icons.more_horiz,
@@ -689,7 +708,8 @@ class FollowUpListScreenNew extends ConsumerWidget {
                                 color: AppTheme.primaryColor,
                               ),
                             ),
-                            onPressed: () => _showActionMenu(context, ref, followUp),
+                            onPressed: () =>
+                                _showActionMenu(context, ref, followUp),
                             tooltip: 'More Actions',
                           ),
                         ],
@@ -705,17 +725,18 @@ class FollowUpListScreenNew extends ConsumerWidget {
     );
   }
 
-  Widget _buildCardDetailRow(BuildContext context, IconData icon, String text, {int maxLines = 1}) {
+  Widget _buildCardDetailRow(
+    BuildContext context,
+    IconData icon,
+    String text, {
+    int maxLines = 1,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: AppTheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 16, color: AppTheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -737,65 +758,63 @@ class FollowUpListScreenNew extends ConsumerWidget {
     String subtitle;
     IconData icon;
     Color iconColor;
-    Color backgroundColor;
 
     switch (filter) {
       case 'Today':
         message = 'No follow-ups for today';
         subtitle = 'Enjoy your day! You can schedule new appointments anytime.';
         icon = Icons.emoji_emotions_outlined;
-        iconColor = Colors.blue.shade600;
-        backgroundColor = Colors.blue.shade50;
+        iconColor = AppTheme.infoColor;
         break;
       case 'Upcoming':
         message = 'No upcoming appointments';
-        subtitle = 'Your schedule is clear for now. Add new follow-ups to stay on track.';
+        subtitle =
+            'Your schedule is clear for now. Add new follow-ups to stay on track.';
         icon = Icons.schedule_outlined;
-        iconColor = Colors.blue.shade500;
-        backgroundColor = Colors.blue.shade50;
+        iconColor = AppTheme.primaryColor;
         break;
       case 'Overdue':
         message = 'No overdue follow-ups';
-        subtitle = 'Great job staying on schedule! All your appointments are up to date.';
+        subtitle =
+            'Great job staying on schedule! All your appointments are up to date.';
         icon = Icons.check_circle_outline;
-        iconColor = Colors.green.shade600;
-        backgroundColor = Colors.green.shade50;
+        iconColor = AppTheme.successColor;
         break;
       case 'Completed':
         message = 'No completed follow-ups';
-        subtitle = 'Start tracking your appointments to see completed ones here.';
+        subtitle =
+            'Start tracking your appointments to see completed ones here.';
         icon = Icons.assignment_turned_in_outlined;
-        iconColor = Colors.green.shade500;
-        backgroundColor = Colors.green.shade50;
+        iconColor = AppTheme.tertiaryColor;
         break;
       default:
         message = 'No follow-ups yet';
-        subtitle = 'Start managing your health appointments by adding your first follow-up.';
+        subtitle =
+            'Start managing your health appointments by adding your first follow-up.';
         icon = Icons.calendar_month_outlined;
         iconColor = AppTheme.primaryColor;
-        backgroundColor = AppTheme.primaryColor.withOpacity(0.08);
     }
 
-    return Container(
+    return GlassCard(
       margin: const EdgeInsets.only(top: AppSpacing.xl),
       padding: const EdgeInsets.all(AppSpacing.xxl),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        border: Border.all(color: iconColor.withOpacity(0.2)),
-      ),
+      borderRadius: AppSpacing.borderRadiusMedium,
+      color: iconColor.withValues(alpha: 0.10),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.glassSurfaceStrong,
               shape: BoxShape.circle,
-              border: Border.all(color: iconColor.withOpacity(0.2), width: 2),
+              border: Border.all(
+                color: iconColor.withValues(alpha: 0.35),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.18),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -827,18 +846,11 @@ class FollowUpListScreenNew extends ConsumerWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-builder: (context) => const AddFollowUpScreenNew(),
+                  builder: (context) => const AddFollowUpScreenNew(),
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: iconColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            style: AppTheme.primaryButtonStyle,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: const [
@@ -968,14 +980,7 @@ builder: (context) => const AddFollowUpScreenNew(),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.onSurfaceColor,
-                        side: const BorderSide(color: AppTheme.outlineColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
+                      style: AppTheme.secondaryButtonStyle,
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -985,18 +990,18 @@ builder: (context) => const AddFollowUpScreenNew(),
                       onPressed: () async {
                         Navigator.pop(context);
                         if (searchController.text.isNotEmpty) {
-                          final results = await ref.read(followUpListProvider.notifier).searchFollowUps(searchController.text);
-                          _showSearchResults(context, results, searchController.text, ref);
+                          final results = await ref
+                              .read(followUpListProvider.notifier)
+                              .searchFollowUps(searchController.text);
+                          _showSearchResults(
+                            context,
+                            results,
+                            searchController.text,
+                            ref,
+                          );
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
+                      style: AppTheme.primaryButtonStyle,
                       child: const Text('Search'),
                     ),
                   ),
@@ -1010,7 +1015,12 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
   }
 
-  void _showSearchResults(BuildContext context, List<FollowUp> results, String query, WidgetRef ref) {
+  void _showSearchResults(
+    BuildContext context,
+    List<FollowUp> results,
+    String query,
+    WidgetRef ref,
+  ) {
     if (results.isEmpty) {
       showDialog(
         context: context,
@@ -1075,16 +1085,20 @@ builder: (context) => const AddFollowUpScreenNew(),
             ),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.cardPadding,
+                ),
                 itemCount: results.length,
                 itemBuilder: (context, index) {
                   final followUp = results[index];
                   final statusColor = _getStatusColor(followUp.status);
-                  
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: AppSpacing.m),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.borderRadiusMedium,
+                      ),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
@@ -1104,23 +1118,23 @@ builder: (context) => const AddFollowUpScreenNew(),
                       ),
                       title: Text(
                         followUp.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            DateFormat('MMM d, yyyy • h:mm a').format(followUp.date),
+                            DateFormat(
+                              'MMM d, yyyy • h:mm a',
+                            ).format(followUp.date),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           if (followUp.doctorName != null)
                             Text(
                               followUp.doctorName!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.onSurfaceVariant,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppTheme.onSurfaceVariant),
                             ),
                         ],
                       ),
@@ -1141,7 +1155,7 @@ builder: (context) => const AddFollowUpScreenNew(),
 
   void _showFilterDialog(BuildContext context, WidgetRef ref) {
     final currentFilter = ref.watch(_followUpFilterProvider);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1166,9 +1180,14 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
   }
 
-  Widget _buildFilterDialogOption(BuildContext context, String filter, String currentFilter, WidgetRef ref) {
+  Widget _buildFilterDialogOption(
+    BuildContext context,
+    String filter,
+    String currentFilter,
+    WidgetRef ref,
+  ) {
     final isSelected = currentFilter == filter;
-    
+
     return ListTile(
       title: Text(filter),
       trailing: isSelected ? const Icon(Icons.check) : null,
@@ -1179,7 +1198,11 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
   }
 
-  void _showFollowUpDetails(BuildContext context, WidgetRef ref, FollowUp followUp) {
+  void _showFollowUpDetails(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUp followUp,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1213,11 +1236,16 @@ builder: (context) => const AddFollowUpScreenNew(),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(followUp.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _getStatusColor(followUp.status).withOpacity(0.3)),
+                    border: Border.all(
+                      color: _getStatusColor(followUp.status).withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1237,14 +1265,39 @@ builder: (context) => const AddFollowUpScreenNew(),
               ],
             ),
             const SizedBox(height: AppSpacing.l),
-            _buildDetailRow(context, Icons.calendar_today, 'Date', DateFormat('EEEE, MMMM d, yyyy').format(followUp.date)),
-            _buildDetailRow(context, Icons.access_time, 'Time', DateFormat('h:mm a').format(followUp.date)),
+            _buildDetailRow(
+              context,
+              Icons.calendar_today,
+              'Date',
+              DateFormat('EEEE, MMMM d, yyyy').format(followUp.date),
+            ),
+            _buildDetailRow(
+              context,
+              Icons.access_time,
+              'Time',
+              DateFormat('h:mm a').format(followUp.date),
+            ),
             if (followUp.doctorName != null)
-              _buildDetailRow(context, Icons.person, 'Doctor', followUp.doctorName!),
+              _buildDetailRow(
+                context,
+                Icons.person,
+                'Doctor',
+                followUp.doctorName!,
+              ),
             if (followUp.clinicName != null)
-              _buildDetailRow(context, Icons.local_hospital, 'Clinic', followUp.clinicName!),
+              _buildDetailRow(
+                context,
+                Icons.local_hospital,
+                'Clinic',
+                followUp.clinicName!,
+              ),
             if (followUp.location != null)
-              _buildDetailRow(context, Icons.location_on, 'Location', followUp.location!),
+              _buildDetailRow(
+                context,
+                Icons.location_on,
+                'Location',
+                followUp.location!,
+              ),
             if (followUp.notes != null && followUp.notes!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.m),
               Text('Notes:', style: Theme.of(context).textTheme.titleMedium),
@@ -1277,13 +1330,8 @@ builder: (context) => const AddFollowUpScreenNew(),
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primaryColor,
-                  side: BorderSide(color: AppTheme.primaryColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
+                  foregroundColor: AppTheme.onSurfaceColor,
+                ).merge(AppTheme.secondaryButtonStyle),
                 child: const Text('Close'),
               ),
             ),
@@ -1293,7 +1341,12 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
   }
 
-  Widget _buildDetailRow(BuildContext context, IconData icon, String label, String value) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
@@ -1326,7 +1379,11 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
   }
 
-  Future<void> _showActionMenu(BuildContext context, WidgetRef ref, FollowUp followUp) async {
+  Future<void> _showActionMenu(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUp followUp,
+  ) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1340,9 +1397,9 @@ builder: (context) => const AddFollowUpScreenNew(),
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Text(
                 followUp.title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1399,12 +1456,18 @@ builder: (context) => const AddFollowUpScreenNew(),
     }
   }
 
-  Future<void> _confirmCompleteFollowUp(BuildContext context, WidgetRef ref, FollowUp followUp) async {
+  Future<void> _confirmCompleteFollowUp(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUp followUp,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Mark as Completed'),
-        content: Text('Are you sure you want to mark "${followUp.title}" as completed?'),
+        content: Text(
+          'Are you sure you want to mark "${followUp.title}" as completed?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1412,7 +1475,7 @@ builder: (context) => const AddFollowUpScreenNew(),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: AppTheme.primaryButtonStyle,
             child: const Text('Complete'),
           ),
         ],
@@ -1420,7 +1483,9 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
 
     if (confirmed == true) {
-      await ref.read(followUpListProvider.notifier).markAsCompleted(followUp.id);
+      await ref
+          .read(followUpListProvider.notifier)
+          .markAsCompleted(followUp.id);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1431,7 +1496,11 @@ builder: (context) => const AddFollowUpScreenNew(),
     }
   }
 
-  Future<void> _confirmCancelFollowUp(BuildContext context, WidgetRef ref, FollowUp followUp) async {
+  Future<void> _confirmCancelFollowUp(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUp followUp,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1444,7 +1513,7 @@ builder: (context) => const AddFollowUpScreenNew(),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: AppTheme.primaryButtonStyle,
             child: const Text('Yes, Cancel'),
           ),
         ],
@@ -1452,7 +1521,9 @@ builder: (context) => const AddFollowUpScreenNew(),
     );
 
     if (confirmed == true) {
-      await ref.read(followUpListProvider.notifier).updateStatus(followUp.id, FollowUpStatus.cancelled);
+      await ref
+          .read(followUpListProvider.notifier)
+          .updateStatus(followUp.id, FollowUpStatus.cancelled);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1464,12 +1535,18 @@ builder: (context) => const AddFollowUpScreenNew(),
     }
   }
 
-  Future<void> _confirmDeleteFollowUp(BuildContext context, WidgetRef ref, FollowUp followUp) async {
+  Future<void> _confirmDeleteFollowUp(
+    BuildContext context,
+    WidgetRef ref,
+    FollowUp followUp,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Follow-up'),
-        content: Text('Are you sure you want to delete "${followUp.title}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "${followUp.title}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1477,7 +1554,7 @@ builder: (context) => const AddFollowUpScreenNew(),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: AppTheme.primaryButtonStyle,
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -1503,7 +1580,9 @@ builder: (context) => const AddFollowUpScreenNew(),
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Follow-up'),
-        content: const Text('Edit functionality will be implemented in the next phase.'),
+        content: const Text(
+          'Edit functionality will be implemented in the next phase.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

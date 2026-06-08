@@ -7,6 +7,7 @@ import '../../core/constants/spacing_constants.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../domain/entities/follow_up.dart';
 import '../providers/follow_up_provider.dart';
+import '../widgets/common/glass_widgets.dart';
 
 class AddFollowUpScreenNew extends ConsumerStatefulWidget {
   final FollowUp? followUpToEdit;
@@ -72,22 +73,23 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
   Widget build(BuildContext context) {
     final isEditing = widget.followUpToEdit != null;
 
-    return Scaffold(
-      backgroundColor: AppTheme.secondaryColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: AppTheme.onPrimaryColor,
-        elevation: 0,
-        title: Text(
-          isEditing ? 'Edit Follow-up' : 'Add Follow-up',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: AppTheme.onPrimaryColor,
-            fontWeight: FontWeight.w600,
+    return GradientOrbBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppTheme.onPrimaryColor,
+          elevation: 0,
+          title: Text(
+            isEditing ? 'Edit Follow-up' : 'Add Follow-up',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: AppTheme.onPrimaryColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
         child: Form(
           key: _formKey,
           child: Column(
@@ -172,23 +174,14 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSectionCard(List<Widget> children, {required String title}) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13), // 0.05 opacity
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: AppSpacing.borderRadiusMedium,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -236,22 +229,7 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
           controller: controller,
           decoration: InputDecoration(
             hintText: hintText,
-            prefixIcon: icon != null ? Icon(icon, color: AppTheme.onSurfaceVariant) : null,
-            filled: true,
-            fillColor: AppTheme.secondaryColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(width: 2, color: AppTheme.primaryColor),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
+            prefixIcon: icon != null ? Icon(icon) : null,
           ),
           validator: validator,
           maxLines: maxLines,
@@ -281,9 +259,9 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: const Color(0x14FFFFFF),
               border: Border.all(color: AppTheme.outlineColor),
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
@@ -325,9 +303,9 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: const Color(0x14FFFFFF),
               border: Border.all(color: AppTheme.outlineColor),
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
@@ -368,21 +346,6 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
               _getStatusIcon(_selectedStatus),
               color: _getStatusColor(_selectedStatus),
             ),
-            filled: true,
-            fillColor: AppTheme.secondaryColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(color: AppTheme.outlineColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-              borderSide: const BorderSide(width: 2, color: AppTheme.primaryColor),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
           ),
           items: FollowUpStatus.values.map((status) {
             return DropdownMenuItem<FollowUpStatus>(
@@ -484,24 +447,7 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
       initialDate: _selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor,
-              onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.onSurfaceColor,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      builder: AppTheme.datePickerThemeBuilder,
     );
 
     if (picked != null && picked != _selectedDate) {
@@ -513,24 +459,7 @@ class _AddFollowUpScreenNewState extends ConsumerState<AddFollowUpScreenNew> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor,
-              onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.onSurfaceColor,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      builder: AppTheme.timePickerThemeBuilder,
     );
 
     if (picked != null && picked != _selectedTime) {

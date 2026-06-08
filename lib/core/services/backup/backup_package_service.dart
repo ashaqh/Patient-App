@@ -34,7 +34,9 @@ class BackupPackageService {
     required File databaseFile,
     required List<Directory> attachmentDirectories,
     required BackupMetadata metadata,
+    required String passphrase,
     Map<String, dynamic> settings = const {},
+    String? profileJson,
   }) async {
     if (!await databaseFile.exists()) {
       throw StateError('Database file not found at ${databaseFile.path}');
@@ -52,6 +54,13 @@ class BackupPackageService {
       'settings.json',
       Uint8List.fromList(utf8.encode(jsonEncode(settings))),
     );
+    if (profileJson != null) {
+      _addEntry(
+        archiveEntries,
+        'profile.json',
+        Uint8List.fromList(utf8.encode(profileJson)),
+      );
+    }
 
     for (final directory in attachmentDirectories) {
       if (!await directory.exists()) continue;
@@ -96,7 +105,10 @@ class BackupPackageService {
         _contentBytes(archive.findFile('checksum.sha256')!),
       );
       zipBytes = Uint8List.fromList(ZipEncoder().encode(archive)!);
-      encryptedBytes = await _cryptoService.encryptBytes(zipBytes);
+      encryptedBytes = await _cryptoService.encryptBytes(
+        zipBytes,
+        passphrase: passphrase,
+      );
       if (actualMetadata.backupSize == encryptedBytes.length) break;
       actualMetadata = _copyMetadata(
         metadata,
@@ -118,10 +130,14 @@ class BackupPackageService {
     );
   }
 
-  Future<Archive> decryptPackage(File packageFile) async {
+  Future<Archive> decryptPackage(
+    File packageFile, {
+    String? passphrase,
+  }) async {
     final encryptedBytes = await packageFile.readAsBytes();
     final zipBytes = await _cryptoService.decryptBytes(
       Uint8List.fromList(encryptedBytes),
+      passphrase: passphrase,
     );
     final archive = ZipDecoder().decodeBytes(zipBytes);
     validateArchive(archive);
@@ -192,7 +208,11 @@ class BackupPackageService {
     );
     final archive = Archive()
       ..addFile(
-        ArchiveFile('metadata.json', metadataBytes.length, metadataBytes),
+        ArchiveFile.noCompress(
+          'metadata.json',
+          metadataBytes.length,
+          metadataBytes,
+        ),
       );
     for (final entry in entries) {
       archive.addFile(

@@ -1,6 +1,13 @@
+import 'dart:io';
+
 class DatabaseConstants {
 // Database info
-static const String databaseName = 'carevault.db';
+  static String get databaseName {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return 'carevault_test_${pid}.db';
+    }
+    return 'carevault.db';
+  }
 static const int databaseVersion = 7;
 
   // Table names

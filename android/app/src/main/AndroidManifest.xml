@@ -5,7 +5,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Exact alarm permissions for Android 12+ (required for exact reminders) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <!-- Required for notifications to survive device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Required for device to wake up and deliver scheduled alarms -->
@@ -19,10 +18,9 @@
     <!-- File access permissions -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" android:minSdkVersion="30"/>
     
     <application
-        android:label="carevault"
+        android:label="CareVault"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

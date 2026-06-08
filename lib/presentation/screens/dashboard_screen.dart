@@ -180,11 +180,11 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Next Dose Card
-          _buildNextDoseCard(context, todaysMedicinesAsync),
+          _buildNextDoseCard(context, ref, todaysRemindersAsync),
           const SizedBox(height: 20),
 
           // Today's Schedule
-          _buildTodaysScheduleSection(context, todaysMedicinesAsync, todaysRemindersAsync),
+          _buildTodaysScheduleSection(context, ref, todaysRemindersAsync),
           const SizedBox(height: 20),
 
           // Health Tips Section
@@ -422,42 +422,35 @@ class DashboardScreen extends ConsumerWidget {
 
 
 
-  Widget _buildNextDoseCard(BuildContext context, AsyncValue<List<Medicine>> todaysMedicinesAsync) {
+  Widget _buildNextDoseCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<ReminderLog>> todaysRemindersAsync,
+  ) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: AppTheme.primaryGradient,
       ),
-      child: todaysMedicinesAsync.when(
-        data: (medicines) {
-          if (medicines.isEmpty) {
+      child: todaysRemindersAsync.when(
+        data: (reminders) {
+          if (reminders.isEmpty) {
             return _buildEmptyNextDose(context);
           }
-          
-          // Find the medicine with the earliest upcoming dose time
-          Medicine? nextMedicine;
-          DateTime? nextReminderTime;
-          
-          for (final medicine in medicines) {
-            final reminderTime = medicine.getNextReminderTime();
-            if (reminderTime != null) {
-              if (nextReminderTime == null || reminderTime.isBefore(nextReminderTime)) {
-                nextMedicine = medicine;
-                nextReminderTime = reminderTime;
-              }
-            }
-          }
-          
-          // If no upcoming reminders found, use the first medicine
-          if (nextMedicine == null) {
-            nextMedicine = medicines.first;
-            nextReminderTime = nextMedicine.getNextReminderTime();
-          }
-          
-          final timeString = nextReminderTime != null 
-            ? DateTimeUtils.formatTime(nextReminderTime)
-            : 'No time set';
-          
+
+          reminders.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+          final nextReminder = reminders.firstWhere(
+            (reminder) => reminder.status == ReminderStatus.pending,
+            orElse: () => reminders.first,
+          );
+          final isManualLoggingAvailable = nextReminder.isManualLoggingAvailable();
+          final isManualLoggingExpired = nextReminder.isManualLoggingExpired();
+          final actionLabel = isManualLoggingExpired
+              ? 'Logging closed for today'
+              : isManualLoggingAvailable
+                  ? 'Log status'
+                  : 'Available 30 min before dose';
+
           return Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -471,7 +464,7 @@ class DashboardScreen extends ConsumerWidget {
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.notifications_active,
                         color: Colors.white,
                         size: 24,
@@ -481,14 +474,13 @@ class DashboardScreen extends ConsumerWidget {
                     Text(
                       'Next Dose',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -497,18 +489,25 @@ class DashboardScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            nextMedicine.name,
+                            nextReminder.medicineName,
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${nextMedicine.dosage} • Take with water',
+                            nextReminder.dosage,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
-                            ),
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _buildManualLoggingHint(nextReminder),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.white.withOpacity(0.86),
+                                ),
                           ),
                         ],
                       ),
@@ -521,32 +520,28 @@ class DashboardScreen extends ConsumerWidget {
                         border: Border.all(color: Colors.white.withOpacity(0.3)),
                       ),
                       child: Text(
-                        timeString,
+                        DateTimeUtils.formatTime(nextReminder.scheduledTime),
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${nextMedicine?.name} marked as taken'),
-                          backgroundColor: AppTheme.successColor,
-                        ),
-                      );
-                    },
+                    onPressed: isManualLoggingAvailable
+                        ? () => _showManualStatusSheet(context, ref, nextReminder)
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppTheme.primaryColor,
+                      disabledBackgroundColor: Colors.white.withOpacity(0.55),
+                      disabledForegroundColor: AppTheme.primaryColor.withOpacity(0.7),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -556,15 +551,17 @@ class DashboardScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.check_circle_outline,
+                          isManualLoggingAvailable
+                              ? Icons.fact_check_outlined
+                              : Icons.schedule,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Mark as Taken',
+                          actionLabel,
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ],
                     ),
@@ -584,8 +581,8 @@ class DashboardScreen extends ConsumerWidget {
           child: Text(
             'Unable to load next dose',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white,
-            ),
+                  color: Colors.white,
+                ),
           ),
         ),
       ),
@@ -716,7 +713,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildTodaysScheduleSection(
     BuildContext context,
-    AsyncValue<List<Medicine>> todaysMedicinesAsync,
+    WidgetRef ref,
     AsyncValue<List<ReminderLog>> todaysRemindersAsync,
   ) {
     return Column(
@@ -731,11 +728,13 @@ class DashboardScreen extends ConsumerWidget {
                 color: AppTheme.primaryColor,
               ),
             ),
-            todaysMedicinesAsync.when(
-              data: (medicines) {
-                final pendingCount = medicines.length; // Should filter by not taken
+            todaysRemindersAsync.when(
+              data: (reminders) {
+                final pendingCount = reminders
+                    .where((reminder) => reminder.status == ReminderStatus.pending)
+                    .length;
                 return Text(
-                  '$pendingCount Med${pendingCount == 1 ? '' : 's'} Remaining',
+                  '$pendingCount Dose${pendingCount == 1 ? '' : 's'} Remaining',
                   style: AppTheme.labelBoldStyle.copyWith(
                     color: AppTheme.secondaryColor,
                   ),
@@ -757,36 +756,48 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        todaysMedicinesAsync.when(
-          data: (medicines) {
-            if (medicines.isEmpty) {
+        todaysRemindersAsync.when(
+          data: (reminders) {
+            if (reminders.isEmpty) {
               return _buildEmptySchedule();
             }
-            
-            // Create medicine cards from actual data
-            final List<Widget> medicineCards = medicines.map((medicine) {
-              // Determine if medicine is taken (we need to check from reminder logs)
-              // For now, we'll show all as pending
-              final nextTime = medicine.getNextReminderTime();
-              final timeString = nextTime != null 
-                ? DateTimeUtils.formatTime(nextTime)
-                : 'No time set';
-              
+
+            final sortedReminders = [...reminders]
+              ..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+
+            final List<Widget> reminderCards = sortedReminders.map((reminder) {
+              final isTaken = reminder.status == ReminderStatus.taken;
+              final isManualLoggingAvailable = reminder.isManualLoggingAvailable();
+              final isManualLoggingExpired = reminder.isManualLoggingExpired();
+              final isPending = reminder.status == ReminderStatus.pending;
+
               return _buildMedicineCard(
                 context,
-                medicine.name,
-                '${medicine.dosage} • ${medicine.frequency}',
+                ref,
+                reminder,
+                reminder.medicineName,
+                reminder.dosage,
                 Icons.medication,
                 AppTheme.primaryColor,
-                false, // Default to pending - should check reminder logs
-                timeString,
-                isActive: medicine.isActive,
+                isTaken,
+                DateTimeUtils.formatTime(
+                  reminder.actualTime ?? reminder.scheduledTime,
+                ),
+                isActive: isPending && isManualLoggingAvailable,
+                isAvailable: isPending && isManualLoggingAvailable,
+                buttonLabel: isPending
+                    ? isManualLoggingExpired
+                        ? 'Logging closed for today'
+                        : isManualLoggingAvailable
+                            ? 'Log status'
+                            : 'Available 30 min before dose'
+                    : reminder.status.displayName,
+                helperText: _buildManualLoggingHint(reminder),
+                statusText: isPending ? null : reminder.status.displayName,
               );
             }).toList();
-            
-            return Column(
-              children: medicineCards,
-            );
+
+            return Column(children: reminderCards);
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Text(
@@ -850,14 +861,19 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildMedicineCard(
     BuildContext context,
+    WidgetRef ref,
+    ReminderLog reminder,
     String name,
     String description,
     IconData icon,
     Color iconColor,
-    bool isTaken, // true = taken, false = pending/upcoming
+    bool isTaken,
     String time, {
-    bool isActive = false, // For pending cards with blue border
-    bool isAvailable = true, // For upcoming but not available
+    bool isActive = false,
+    bool isAvailable = true,
+    String? buttonLabel,
+    String? helperText,
+    String? statusText,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1025,7 +1041,33 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-            if (!isTaken) // Action button for pending/upcoming medicines
+            if (!isTaken && statusText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    statusText,
+                    style: AppTheme.labelBoldStyle.copyWith(
+                      color: _getReminderStatusColor(reminder.status),
+                    ),
+                  ),
+                ),
+              ),
+            if (helperText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    helperText,
+                    style: AppTheme.bodyMdStyle.copyWith(
+                      color: AppTheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            if (!isTaken && reminder.status == ReminderStatus.pending)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: SizedBox(
@@ -1033,13 +1075,7 @@ class DashboardScreen extends ConsumerWidget {
                   height: 64,
                   child: ElevatedButton(
                     onPressed: isAvailable
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Marked $name as taken'),
-                              ),
-                            );
-                          }
+                        ? () => _showManualStatusSheet(context, ref, reminder)
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isActive ? Colors.white : AppTheme.surfaceContainerHighest,
@@ -1057,11 +1093,11 @@ class DashboardScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          isAvailable ? Icons.check_circle : Icons.pending,
+                          isAvailable ? Icons.fact_check_outlined : Icons.pending,
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          isAvailable ? 'Mark as Taken' : 'Not Yet Available',
+                          buttonLabel ?? (isAvailable ? 'Log status' : 'Not Yet Available'),
                           style: AppTheme.headlineMdStyle,
                         ),
                       ],
@@ -1073,6 +1109,213 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String? _buildManualLoggingHint(ReminderLog reminder) {
+    if (reminder.status != ReminderStatus.pending) {
+      return 'Status recorded for this dose.';
+    }
+
+    if (reminder.isManualLoggingExpired()) {
+      return 'Manual logging closed at midnight for this dose.';
+    }
+
+    if (reminder.isManualLoggingAvailable()) {
+      return 'Confirm Taken or Missed. Both actions require confirmation.';
+    }
+
+    return null;
+  }
+
+  Future<void> _showManualStatusSheet(
+    BuildContext context,
+    WidgetRef ref,
+    ReminderLog reminder,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  reminder.medicineName,
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${reminder.dosage} at ${DateTimeUtils.formatTime(reminder.scheduledTime)}',
+                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 20),
+                _buildManualStatusAction(
+                  context: sheetContext,
+                  icon: Icons.check_circle_outline,
+                  label: 'Taken',
+                  color: AppTheme.successColor,
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await _confirmManualStatus(
+                      context,
+                      ref,
+                      reminder,
+                      ReminderStatus.taken,
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildManualStatusAction(
+                  context: sheetContext,
+                  icon: Icons.cancel_outlined,
+                  label: 'Missed',
+                  color: AppTheme.errorColor,
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await _confirmManualStatus(
+                      context,
+                      ref,
+                      reminder,
+                      ReminderStatus.missed,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildManualStatusAction({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, color: color),
+        label: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmManualStatus(
+    BuildContext context,
+    WidgetRef ref,
+    ReminderLog reminder,
+    ReminderStatus status,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text('Confirm ${status.displayName.toLowerCase()}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${reminder.medicineName} • ${reminder.dosage}'),
+              const SizedBox(height: 8),
+              Text('Scheduled for ${DateTimeUtils.formatTime(reminder.scheduledTime)}'),
+              const SizedBox(height: 12),
+              Text(
+                status == ReminderStatus.taken
+                    ? 'This will record the dose as taken.'
+                    : 'This will record the dose as missed.',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: status == ReminderStatus.taken
+                    ? AppTheme.successColor
+                    : AppTheme.errorColor,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Confirm ${status.displayName}'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      final updater = ref.read(reminderStatusUpdaterProvider);
+      if (status == ReminderStatus.taken) {
+        await updater.markAsTakenManually(
+          medicineId: reminder.medicineId,
+          scheduledTime: reminder.scheduledTime,
+          notes: 'Confirmed manually from dashboard',
+        );
+      } else {
+        await updater.markAsMissedManually(
+          medicineId: reminder.medicineId,
+          scheduledTime: reminder.scheduledTime,
+          notes: 'Confirmed manually from dashboard',
+        );
+      }
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${reminder.medicineName} marked as ${status.displayName.toLowerCase()}.',
+          ),
+          backgroundColor: status == ReminderStatus.taken
+              ? AppTheme.successColor
+              : AppTheme.errorColor,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
   }
 
   Widget _buildEmergencySupportSection(BuildContext context) {
@@ -1261,7 +1504,7 @@ color: AppTheme.errorColor,
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 2.5,
+          childAspectRatio: 1.8,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           children: [
@@ -1348,6 +1591,7 @@ color: AppTheme.errorColor,
 
   Widget _buildTodaysRemindersSection(
     BuildContext context,
+    WidgetRef ref,
     AsyncValue<List<ReminderLog>> todaysRemindersAsync,
   ) {
     return Card(
@@ -1382,7 +1626,7 @@ color: AppTheme.errorColor,
                   );
                 }
                 return Column(
-                  children: reminders.map((reminder) => _buildReminderCard(context, reminder)).toList(),
+                  children: reminders.map((reminder) => _buildReminderCard(context, ref, reminder)).toList(),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -1502,7 +1746,7 @@ color: AppTheme.errorColor,
     );
   }
 
-  Widget _buildReminderCard(BuildContext context, ReminderLog reminder) {
+  Widget _buildReminderCard(BuildContext context, WidgetRef ref, ReminderLog reminder) {
     final statusColor = _getReminderStatusColor(reminder.status);
     final statusText = reminder.status.displayName;
     final isOverdue = reminder.isOverdue;
@@ -1512,6 +1756,9 @@ color: AppTheme.errorColor,
       elevation: 2,
       color: isOverdue ? Colors.red.shade50 : null,
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minVerticalPadding: 12,
+        isThreeLine: true,
         leading: CircleAvatar(
           backgroundColor: statusColor.withOpacity(0.2),
           child: Icon(
@@ -1579,7 +1826,7 @@ color: AppTheme.errorColor,
                 icon: const Icon(Icons.check_circle_outline),
                 color: Theme.of(context).colorScheme.primary,
                 onPressed: () {
-                  _handleReminderAction(context, reminder, 'taken');
+                  _showManualStatusSheet(context, ref, reminder);
                 },
               )
             : null,
@@ -1595,6 +1842,9 @@ color: AppTheme.errorColor,
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minVerticalPadding: 12,
+        isThreeLine: true,
         leading: Icon(
           medicine.isActive ? Icons.medication : Icons.medication_outlined,
           color: medicine.isActive ? Theme.of(context).colorScheme.primary : Colors.grey,
@@ -1676,12 +1926,22 @@ color: AppTheme.errorColor,
     }
   }
 
-  void _handleReminderAction(BuildContext context, ReminderLog reminder, String action) {
-    // This would be implemented with proper state management
-    // For now, show a snackbar
+  Future<void> _handleReminderAction(
+    BuildContext context,
+    WidgetRef ref,
+    ReminderLog reminder,
+    ReminderStatus status,
+  ) async {
+    if (status == ReminderStatus.taken || status == ReminderStatus.missed) {
+      await _confirmManualStatus(context, ref, reminder, status);
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Marked ${reminder.medicineName} as $action at ${reminder.displayTime}'),
+        content: Text(
+          '${status.displayName} is only available from the reminder notification.',
+        ),
       ),
     );
   }

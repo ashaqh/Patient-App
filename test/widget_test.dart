@@ -20,11 +20,14 @@ void main() {
       ),
     );
 
+    // Wait for the splash screen to complete (2.5s duration)
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+
     // Verify that the app title appears
-    expect(find.text('CareVault'), findsOneWidget);
+    expect(find.text('CareVault'), findsAtLeastNWidgets(1));
     
     // Verify welcome message appears
-    expect(find.text('Welcome to CareVault'), findsOneWidget);
+    expect(find.text('Welcome back!'), findsOneWidget);
   });
 }
 

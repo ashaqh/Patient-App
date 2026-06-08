@@ -187,11 +187,12 @@ class HealthService {
 
   /// Fetch health data for a specific data type and time range
   Future<List<HealthDataPoint>> fetchHealthData({
-    required HealthDataType dataType,
+    required AppHealthDataType dataType,
     required DateTime startDate,
     required DateTime endDate,
     int limit = 100,
   }) async {
+
     try {
       // Convert app data type to health package data type
       final healthDataType = _mapToHealthDataType(dataType);
@@ -229,16 +230,16 @@ class HealthService {
   }
 
   /// Fetch all health data for all supported data types
-  Future<Map<HealthDataType, List<HealthDataPoint>>> fetchAllHealthData({
+  Future<Map<AppHealthDataType, List<HealthDataPoint>>> fetchAllHealthData({
     required DateTime startDate,
     required DateTime endDate,
     int limitPerType = 50,
   }) async {
     try {
-      final results = <HealthDataType, List<HealthDataPoint>>{};
+      final results = <AppHealthDataType, List<HealthDataPoint>>{};
 
       // Fetch data for each data type
-      for (final appDataType in HealthDataType.values) {
+      for (final appDataType in AppHealthDataType.values) {
         final healthDataType = _mapToHealthDataType(appDataType);
         if (healthDataType == null) continue;
 
@@ -269,7 +270,7 @@ class HealthService {
     }
   }
 
-  /// Convert app data type to health package data type
+
   HealthDataType? _mapToHealthDataType(AppHealthDataType appDataType) {
     switch (appDataType) {
       case AppHealthDataType.bloodPressure:
@@ -282,10 +283,24 @@ class HealthService {
         return HealthDataType.BODY_TEMPERATURE;
       case AppHealthDataType.oxygenSaturation:
         return HealthDataType.OXYGEN_SATURATION;
-      default:
-        return null;
     }
   }
+
+  AppHealthDataType? _mapToAppHealthDataType(HealthDataType healthDataType) {
+    switch (healthDataType) {
+      case HealthDataType.BLOOD_PRESSURE:
+        return AppHealthDataType.bloodPressure;
+      case HealthDataType.BLOOD_GLUCOSE:
+        return AppHealthDataType.bloodGlucose;
+      case HealthDataType.WEIGHT:
+        return AppHealthDataType.weight;
+      case HealthDataType.BODY_TEMPERATURE:
+        return AppHealthDataType.bodyTemperature;
+      case HealthDataType.OXYGEN_SATURATION:
+        return AppHealthDataType.oxygenSaturation;
+    }
+  }
+
 
   /// Get display name for health data type
   String getDisplayName(AppHealthDataType dataType) {
@@ -343,16 +358,15 @@ class HealthService {
 
       for (final point in bloodPressurePoints) {
         results.add({
-          'value': point
-              .value, // Note: This might be a map or special object for blood pressure
+          'value': point.value,
           'unit': point.unitString,
           'dateFrom': point.dateFrom,
           'dateTo': point.dateTo,
           'dataType': 'BLOOD_PRESSURE',
           'sourceId': point.sourceId,
           'sourceName': point.sourceName,
-          'device': point.device ?? '',
-          'platform': point.platform?.toString() ?? '',
+          'device': '',
+          'platform': '',
         });
       }
 
@@ -367,6 +381,7 @@ class HealthService {
       return [];
     }
   }
+
 
   /// Get recent health data summary
   Future<Map<String, dynamic>> getHealthSummary({
@@ -409,24 +424,22 @@ class HealthService {
             final min = values.reduce((a, b) => a < b ? a : b);
             final max = values.reduce((a, b) => a > b ? a : b);
 
-            // Convert HealthDataType to AppHealthDataType for unit lookup
-            final appDataType = _mapToAppHealthDataType(dataType);
             summary['dataTypes'][dataType.toString()] = {
               'count': dataPoints.length,
               'average': average,
               'min': min,
               'max': max,
               'latest': dataPoints.last.dateFrom,
-              'unit': appDataType != null ? getUnit(appDataType) : '',
+              'unit': getUnit(dataType),
             };
           } catch (e) {
             // Skip statistics calculation if values can't be converted
-            final appDataType = _mapToAppHealthDataType(dataType);
             summary['dataTypes'][dataType.toString()] = {
               'count': dataPoints.length,
               'latest': dataPoints.last.dateFrom,
-              'unit': appDataType != null ? getUnit(appDataType) : '',
+              'unit': getUnit(dataType),
             };
+
           }
         }
       }

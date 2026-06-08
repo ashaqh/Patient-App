@@ -2,7 +2,15 @@ class AppConstants {
   // App information
   static const String appName = 'CareVault';
   static const String appVersion = '1.0.0';
-  
+  static const String privacyPolicyUrl =
+      'https://sites.google.com/view/carevault/home';
+  static const String termsOfServiceUrl =
+      'https://sites.google.com/view/carevaulttos/home';
+  static const String supportEmail = 'kamdarakansha@gmail.com';
+  static const String complianceEmail = 'privacy@carevault.app';
+  static const String appStoreReviewUrl = 'https://apps.apple.com/app/id0000000000';
+  static const String playStoreReviewUrl =
+      'https://play.google.com/store/apps/details?id=com.apprise.carevault';
   // Database constants
   static const String databaseName = 'carevault.db';
   static const int databaseVersion = 1;

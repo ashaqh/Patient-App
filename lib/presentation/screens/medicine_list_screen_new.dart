@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/medicine.dart';
 import '../providers/medicine_provider.dart';
+import '../widgets/common/glass_widgets.dart';
 import 'add_medicine_screen_new.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/constants/spacing_constants.dart';
@@ -17,56 +19,46 @@ class MedicineListScreenNew extends ConsumerWidget {
     final activeMedicinesAsync = ref.watch(activeMedicinesProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryColor,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar
-          SliverAppBar(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: AppTheme.onPrimaryColor,
-            elevation: 0,
-            floating: true,
-            pinned: true,
-            title: Text(
-              'My Medicines',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.onPrimaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () {
-                  _showSearchDialog(context, ref);
-                },
-                tooltip: 'Search',
-              ),
-            ],
-          ),
-
-          // Main Content
           SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.xl,
+              AppSpacing.screenHorizontal,
+              86 + AppSpacing.xxl,
+            ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Statistics Cards
-                _buildStatisticsSection(context, activeMedicinesAsync),
+                const SectionHeader(
+                  eyebrow: 'Medicines',
+                  title: 'My Medicines',
+                  subtitle: 'Manage active schedules and dosage details with clarity.',
+                ).animate().fadeIn(duration: 300.ms).slideY(begin: .06, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // Filter Tabs
-                _buildFilterTabs(context, ref),
+                _buildStatisticsSection(context, activeMedicinesAsync)
+                    .animate()
+                    .fadeIn(delay: 80.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.l),
-
-                // Medicine List
-                _buildMedicineList(context, ref, medicineListState),
+                _buildFilterTabs(context, ref)
+                    .animate()
+                    .fadeIn(delay: 140.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
+                const SizedBox(height: AppSpacing.l),
+                _buildMedicineList(context, ref, medicineListState)
+                    .animate()
+                    .fadeIn(delay: 200.ms, duration: 300.ms)
+                    .slideY(begin: .08, end: 0),
                 const SizedBox(height: AppSpacing.xxl),
               ]),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GradientFab(
         onPressed: () {
           Navigator.push(
             context,
@@ -75,12 +67,7 @@ class MedicineListScreenNew extends ConsumerWidget {
             ),
           );
         },
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: AppTheme.onPrimaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        ),
-        child: const Icon(Icons.add, size: 28),
+        icon: Icons.add,
       ),
     );
   }
@@ -95,20 +82,19 @@ class MedicineListScreenNew extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Medicine Overview',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.onSurfaceColor,
-              ),
+            const SectionHeader(
+              eyebrow: 'Overview',
+              title: 'Medicine Overview',
             ),
             const SizedBox(height: AppSpacing.m),
             GridView.count(
               crossAxisCount: 3,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.1,
               mainAxisSpacing: AppSpacing.s,
               crossAxisSpacing: AppSpacing.s,
+              padding: EdgeInsets.zero,
               children: [
                 _buildStatCard(
                   context,
@@ -169,41 +155,36 @@ class MedicineListScreenNew extends ConsumerWidget {
   }
 
   Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, Color color) {
-    return Container(
+return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 16),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                ),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [color.withValues(alpha: 0.85), color],
               ),
-            ],
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: Colors.white, size: 18),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const Spacer(),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: color,
+              color: Colors.white,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -214,16 +195,9 @@ class MedicineListScreenNew extends ConsumerWidget {
   Widget _buildFilterTabs(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(medicineListProvider).filter;
     
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        border: Border.all(
-          width: 1,
-          color: AppTheme.outlineVariant,
-        ),
-      ),
+return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      borderRadius: 22,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -309,17 +283,15 @@ class MedicineListScreenNew extends ConsumerWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Medicines',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppTheme.onSurfaceColor,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.m),
-        ...medicines.map((medicine) => _buildMedicineCard(context, medicine, ref)).toList(),
+return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(
+              eyebrow: 'Medications',
+              title: 'Medicines',
+            ),
+            const SizedBox(height: AppSpacing.m),
+            ...medicines.map((medicine) => _buildMedicineCard(context, medicine, ref)).toList(),
       ],
     );
   }
@@ -329,19 +301,10 @@ class MedicineListScreenNew extends ConsumerWidget {
     final timesDisplayText = medicine.times.map(_formatTimeForDisplay).join(', ');
     final status = _getMedicineStatus(medicine);
     
-    return Container(
+return GlassCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(AppSpacing.m),
+      borderRadius: 24,
       child: Column(
         children: [
           // Medicine header
@@ -349,19 +312,19 @@ class MedicineListScreenNew extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.m),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
-                  ),
-                  child: Icon(
-                    Icons.medication,
-                    color: AppTheme.primaryColor,
-                    size: 24,
-                  ),
+Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(18),
                 ),
+                child: const Icon(
+                  Icons.medication_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
                   child: Column(
@@ -390,10 +353,10 @@ class MedicineListScreenNew extends ConsumerWidget {
           ),
 
           // Medicine details
-          Container(
+Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: const Color(0x10FFFFFF),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(AppSpacing.borderRadiusMedium),
                 bottomRight: Radius.circular(AppSpacing.borderRadiusMedium),
@@ -510,16 +473,9 @@ class MedicineListScreenNew extends ConsumerWidget {
     IconData icon, {
     VoidCallback? onAddTap,
   }) {
-    return Container(
+return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusMedium),
-        border: Border.all(
-          width: 1,
-          color: AppTheme.outlineVariant,
-        ),
-      ),
+      borderRadius: 24,
       child: Column(
         children: [
           Icon(

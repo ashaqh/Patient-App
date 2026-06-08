@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
@@ -19,7 +20,7 @@ class DatabaseHelper {
 
   // Get database instance
   Future<Database> get database async {
-    if (_database != null) return _database!;
+    if (_database != null && _database!.isOpen) return _database!;
 
     _database = await _initDatabase();
     return _database!;
@@ -176,6 +177,12 @@ class DatabaseHelper {
     }
   }
 
+  // Reopen the current database file without deleting or recreating it.
+  Future<void> reopenDatabase() async {
+    await close();
+    _database = await _initDatabase();
+  }
+
   // Clear all data (for testing/reset)
   Future<void> clearAllData() async {
     final db = await database;
@@ -260,16 +267,20 @@ class DatabaseHelper {
     return stats.values.every((count) => count == 0);
   }
 
-  // Backup database (simple implementation)
+  // Backup database
   Future<String?> backupDatabase() async {
     try {
       final databasesPath = await getDatabasesPath();
       final sourcePath = join(databasesPath, DatabaseConstants.databaseName);
       final backupPath = '$sourcePath.backup';
+      final sourceFile = File(sourcePath);
+      if (!await sourceFile.exists()) {
+        await database;
+      }
 
-      // Copy database file
-      // Note: This is a simplified implementation
-      // In a real app, you would use proper file copying
+      await close();
+      await File(sourcePath).copy(backupPath);
+      _database = await _initDatabase();
       return backupPath;
     } catch (e) {
       return null;
@@ -281,17 +292,44 @@ class DatabaseHelper {
     try {
       await close();
 
+      final backupFile = File(backupPath);
+      if (!await backupFile.exists()) {
+        return false;
+      }
+
       final databasesPath = await getDatabasesPath();
       final currentPath = join(databasesPath, DatabaseConstants.databaseName);
+      final currentFile = File(currentPath);
+      final stagedPath = '$currentPath.restoretmp';
+      final stagedFile = File(stagedPath);
+      final previousPath = '$currentPath.prerestore';
+      final previousFile = File(previousPath);
 
-      // Delete current database
-      await deleteDatabase(currentPath);
+      if (await stagedFile.exists()) {
+        await stagedFile.delete();
+      }
+      if (await previousFile.exists()) {
+        await previousFile.delete();
+      }
 
-      // Copy backup to current location
-      // Note: This is a simplified implementation
-      // In a real app, you would use proper file copying
+      await backupFile.copy(stagedPath);
+      if (await currentFile.exists()) {
+        await currentFile.rename(previousPath);
+      }
 
-      // Reinitialize database
+      try {
+        await stagedFile.rename(currentPath);
+      } catch (_) {
+        if (await previousFile.exists()) {
+          await previousFile.rename(currentPath);
+        }
+        rethrow;
+      }
+
+      if (await previousFile.exists()) {
+        await previousFile.delete();
+      }
+
       _database = await _initDatabase();
       return true;
     } catch (e) {

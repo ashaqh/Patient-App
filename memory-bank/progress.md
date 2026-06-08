@@ -197,6 +197,29 @@
 - ✅ Flutter analyze passes (warnings only, no errors)
 - ✅ Basic app structure is runnable
 
+## Phase 9.1: UI Fixes - Bottom Overflow (2026-05)
+
+### Problem
+All 5 main screens (`dashboard_screen_new`, `prescription_list_screen_new`, `follow_up_list_screen_new`, `medicine_list_screen_new`, `timeline_screen`) used `SliverPadding(padding: EdgeInsets.all(...))` with only the horizontal+vertical screen padding. The last card in each scrollable list was clipped by the 86px bottom navigation bar since there was no extra bottom padding to account for it.
+
+### Fix
+Changed each `SliverPadding` to add `EdgeInsets.only(bottom: 86 + AppSpacing.xxl)` = **134px** of bottom padding (86px nav bar height + 48px xxl spacing), using the `+` operator to combine with existing horizontal/vertical padding:
+```dart
+padding: const EdgeInsets.symmetric(
+  horizontal: AppSpacing.screenHorizontal,
+  vertical: AppSpacing.m,
+).add(
+  EdgeInsets.only(bottom: 86 + AppSpacing.xxl),
+),
+```
+
+### Files Modified
+- `lib/presentation/screens/dashboard_screen_new.dart`
+- `lib/presentation/screens/prescription_list_screen_new.dart`
+- `lib/presentation/screens/follow_up_list_screen_new.dart`
+- `lib/presentation/screens/medicine_list_screen_new.dart`
+- `lib/presentation/screens/timeline_screen.dart`
+
 ## Phase 4: Prescription Upload - COMPLETED ✅
 
 ### Completed Tasks
@@ -646,3 +669,57 @@ The Patient Companion App has all core functionality implemented (Phases 1-8):
 - ✅ Clean architecture with Riverpod state management
 
 The app is feature-complete but requires dependency resolution and minor fixes for production release. A debug APK can be built for internal beta testing once the file_picker dependency issue is resolved.
+
+## Backup/Restore Remediation - 2026-05-21
+
+### Completed Bugs
+1. ✅ **Hardcoded portable backup key removed**
+   - Introduced passphrase-based V3 backup encryption with PBKDF2-derived keys.
+   - Added UI passphrase management in Backup Settings and required passphrase for backup/restore.
+   - Preserved legacy V1/V2 decryption support for older backups.
+
+2. ✅ **Restore side effects isolated with staging**
+   - Restore now stages extracted files in a unique temp workspace instead of writing directly into the live documents directory.
+   - File promotion happens only after database work succeeds.
+
+3. ✅ **Merge restore file references corrected**
+   - Merge restore now performs the second live-database rewrite pass after merge.
+   - Added diagnostics for zero-row path rewrite updates.
+
+4. ✅ **Database replacement and rollback made safe**
+   - Replaced destructive delete-then-copy behavior with staged file replacement and fallback backup handling.
+   - Applied the same safe replacement pattern to helper-level DB restore behavior.
+
+5. ✅ **Backup settings restore completed**
+   - Restore settings decoding now includes `backup_retention_count`.
+   - Added normalization logic for restored backup settings.
+
+6. ✅ **Drive metadata privacy exposure reduced**
+   - Removed device info, device name, and notes from Drive app properties.
+   - Backup listings continue to work using non-sensitive metadata only.
+
+7. ✅ **Foreign keys guaranteed to re-enable**
+   - Wrapped merge foreign-key toggling in a reusable try/finally guard.
+   - Added verification that foreign keys return to ON after guarded failures.
+
+8. ✅ **Test-only dependencies moved out of runtime dependencies**
+   - Moved `flutter_test`, `flutter_lints`, and `mocktail` into `dev_dependencies`.
+
+9. ✅ **Regression coverage expanded**
+   - Added verification coverage for passphrase-based crypto, encrypted backup package round-trips, restore staging, path rewriting, safe DB replacement, restored settings decoding, Drive metadata minimization, foreign-key guard behavior, and helper DB backup/restore.
+
+10. ✅ **Legacy simplified helper methods reviewed and corrected**
+   - `DatabaseHelper.backupDatabase()` now performs a real file backup.
+   - `DatabaseHelper.restoreDatabase()` now performs a real staged restore instead of placeholder logic.
+
+### Verification Completed
+- `flutter pub get`
+- `flutter test test/backup_crypto_service_test.dart`
+- `flutter test test/backup_package_service_test.dart`
+- `flutter test test/restore_service_test.dart`
+- `flutter test test/backup_drive_service_test.dart`
+- `flutter test test/database_helper_test.dart`
+- `flutter analyze lib/core/services/backup lib/data/datasources/database_helper.dart lib/presentation/screens/backup_settings_screen.dart test/backup_crypto_service_test.dart test/backup_package_service_test.dart test/restore_service_test.dart test/backup_drive_service_test.dart test/database_helper_test.dart`
+
+### Remaining Note
+- `flutter analyze` still reports one pre-existing deprecation in `backup_scheduler_service.dart` (`isInDebugMode`). The remediation changes themselves are otherwise verified.

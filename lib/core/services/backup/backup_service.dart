@@ -14,6 +14,7 @@ import '../../models/backup_metadata.dart';
 import '../../utils/device_info_service.dart';
 import '../../utils/error_utils.dart';
 import '../../utils/network_info_service.dart';
+import 'backup_crypto_service.dart';
 import 'backup_drive_service.dart';
 import 'backup_package_service.dart';
 
@@ -97,6 +98,7 @@ class BackupService {
   static const _wifiOnlyKey = 'backup_wifi_only';
   static const _chargingOnlyKey = 'backup_charging_only';
   static const _retentionKey = 'backup_retention_count';
+  static const _passphraseKey = 'backup_passphrase';
 
   final DatabaseHelper _databaseHelper;
   final BackupDriveService _driveService;
@@ -121,6 +123,27 @@ class BackupService {
 
   Future<void> disconnectGoogleDrive() {
     return _driveService.signOut();
+  }
+
+  Future<String?> getBackupPassphrase() {
+    return _secureStorage.read(key: _passphraseKey);
+  }
+
+  Future<void> saveBackupPassphrase(String passphrase) async {
+    final normalized = passphrase.trim();
+    if (normalized.isEmpty) {
+      throw const FormatException('Backup passphrase cannot be empty');
+    }
+    await _secureStorage.write(key: _passphraseKey, value: normalized);
+  }
+
+  Future<void> clearBackupPassphrase() {
+    return _secureStorage.delete(key: _passphraseKey);
+  }
+
+  Future<bool> hasBackupPassphrase() async {
+    final passphrase = await getBackupPassphrase();
+    return passphrase != null && passphrase.trim().isNotEmpty;
   }
 
   Future<BackupSettings> getSettings() async {
@@ -174,6 +197,10 @@ class BackupService {
     return _driveService.listBackups();
   }
 
+  Future<void> deleteBackup(String fileId) async {
+    await _driveService.deleteBackup(fileId);
+  }
+
   Future<BackupOperationResult> createAndUploadBackup({String? note}) async {
     try {
       await initialize();
@@ -194,8 +221,20 @@ class BackupService {
         }
       }
 
+      final passphrase = await getBackupPassphrase();
+      if (passphrase == null || passphrase.trim().isEmpty) {
+        return const BackupOperationResult(
+          success: false,
+          message:
+              'Set a backup passphrase before creating encrypted backups.',
+        );
+      }
+
       final settings = await getSettings();
-      final packageResult = await _createLocalBackupPackage(note: note);
+      final packageResult = await _createLocalBackupPackage(
+        note: note,
+        passphrase: passphrase,
+      );
       await _driveService.uploadBackup(
         file: packageResult.file,
         metadata: packageResult.metadata,
@@ -240,7 +279,10 @@ class BackupService {
     );
   }
 
-  Future<BackupPackageResult> _createLocalBackupPackage({String? note}) async {
+  Future<BackupPackageResult> _createLocalBackupPackage({
+    String? note,
+    required String passphrase,
+  }) async {
     final backupId = const Uuid().v4();
     final tempDir = await getTemporaryDirectory();
     final outputDir = Directory(path.join(tempDir.path, 'carevault_backups'));
@@ -256,13 +298,16 @@ class BackupService {
       await _databaseHelper.close();
     }
 
+    final profileJson = await _secureStorage.read(key: 'user_profile_data');
     final metadata = await _createMetadata(backupId: backupId, note: note);
     final packageResult = await _packageService.createEncryptedPackage(
       outputDirectory: outputDir,
       databaseFile: dbFile,
       attachmentDirectories: await _attachmentDirectories(),
       metadata: metadata,
+      passphrase: passphrase,
       settings: (await getSettings()).toJson(),
+      profileJson: profileJson,
     );
 
     await _databaseHelper.database;
@@ -282,7 +327,7 @@ class BackupService {
       deviceInfo: deviceInfo.toString(),
       schemaVersion: DatabaseConstants.databaseVersion,
       fileCount: 0,
-      encryptionVersion: 1,
+      encryptionVersion: BackupCryptoService.currentEncryptionVersion,
       backupSize: 0,
       deviceName: deviceName,
       notes: note,

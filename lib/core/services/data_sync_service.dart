@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'database_change_monitor.dart';
-import '../../utils/error_utils.dart';
+import '../utils/error_utils.dart';
 
 class DataSyncService {
   final DatabaseChangeMonitor _monitor;

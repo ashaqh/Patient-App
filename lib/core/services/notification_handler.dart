@@ -103,19 +103,10 @@ class NotificationHandler {
     required String medicineId,
     required DateTime scheduledTime,
   }) async {
-    // In a real app, this would navigate to the medicine details screen
-    // or show a dialog to mark the reminder
-    ErrorUtils.logInfo('Medicine notification tapped: $medicineId at $scheduledTime');
-    
-    // For now, we'll just mark it as taken
-    await _reminderScheduler.markReminderAsTaken(
-      medicineId: medicineId,
-      scheduledTime: scheduledTime,
-      notes: 'Marked as taken via notification tap',
+    ErrorUtils.logInfo(
+      'Medicine notification tapped: $medicineId at $scheduledTime. Awaiting in-app confirmation.',
     );
-    
-    // Cancel the notification
-    await _notificationService.cancelReminder(medicineId, scheduledTime);
+
     onReminderChanged?.call();
   }
 

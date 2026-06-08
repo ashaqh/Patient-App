@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/themes/app_theme.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../providers/medicine_provider.dart';
@@ -304,6 +305,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
               initialDate: value ?? DateTime.now(),
               firstDate: DateTime(2000),
               lastDate: DateTime(2100),
+              builder: AppTheme.datePickerThemeBuilder,
             );
             if (selectedDate != null) {
               onChanged(selectedDate);
@@ -381,6 +383,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: AppTheme.timePickerThemeBuilder,
     );
 
     if (selectedTime != null) {

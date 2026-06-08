@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/utils/vital_sign_validation.dart';
-import '../../core/widgets/elderly_friendly_button.dart';
+import '../../core/themes/app_theme.dart';
+import '../../core/constants/spacing_constants.dart';
 import '../providers/vital_sign_provider.dart';
 import '../widgets/health_data_import_widget.dart';
+import '../widgets/common/glass_widgets.dart';
 import '../../domain/entities/vital_sign.dart';
 
 class AddVitalSignScreen extends ConsumerStatefulWidget {
@@ -79,12 +81,15 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       initialDate: _readingTime,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 1)),
+      builder: AppTheme.datePickerThemeBuilder,
     );
     
     if (pickedDate != null) {
+      if (!mounted) return;
       final pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_readingTime),
+        builder: AppTheme.timePickerThemeBuilder,
       );
       
       if (pickedTime != null) {
@@ -107,11 +112,11 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       children: [
         Text(
           'Vital Sign Type',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -131,23 +136,15 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
                   });
                 }
               },
-              backgroundColor: isSelected 
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                  : null,
-              selectedColor: Theme.of(context).colorScheme.primary,
-              labelStyle: TextStyle(
-                color: isSelected 
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : null,
-              ),
             );
           }).toList(),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.s),
         Text(
           VitalSignValidation.getTargetRangeDescription(_selectedType),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -161,17 +158,31 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
     required String? Function(String?) validator,
     bool isRequired = true,
   }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText,
-        border: const OutlineInputBorder(),
-        suffixText: _selectedType.unit,
-      ),
-      keyboardType: TextInputType.number,
-      validator: validator,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hintText,
+            prefixIcon: const Icon(Icons.mode_edit_outline),
+            suffixText: _selectedType.unit,
+            suffixStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.onSurfaceVariant,
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          validator: validator,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
     );
   }
 
@@ -181,33 +192,33 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       children: [
         Text(
           'Reading Time',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         InkWell(
           onTap: _selectDateTime,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).dividerColor),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0x14FFFFFF),
+              border: Border.all(color: AppTheme.outlineColor),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, size: 20),
-                const SizedBox(width: 12),
+                const Icon(Icons.calendar_today, color: AppTheme.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.m),
                 Expanded(
                   child: Text(
                     DateFormat('MMM dd, yyyy - hh:mm a').format(_readingTime),
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.onSurfaceColor,
+                    ),
                   ),
                 ),
-                Icon(
-                  Icons.arrow_drop_down,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
+                const Icon(Icons.arrow_drop_down, color: AppTheme.primaryColor),
               ],
             ),
           ),
@@ -226,11 +237,11 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       children: [
         Text(
           'Meal Context',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -244,15 +255,6 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
                   _selectedMealMarker = selected ? marker : null;
                 });
               },
-              backgroundColor: isSelected 
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                  : null,
-              selectedColor: Theme.of(context).colorScheme.primary,
-              labelStyle: TextStyle(
-                color: isSelected 
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : null,
-              ),
             );
           }).toList(),
         ),
@@ -266,21 +268,21 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       children: [
         Text(
           'Device Source',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         DropdownButtonFormField<String>(
-          value: _deviceSource,
+          initialValue: _deviceSource,
           decoration: const InputDecoration(
-            border: OutlineInputBorder(),
             hintText: 'Select device source',
+            prefixIcon: Icon(Icons.device_hub),
           ),
           items: _deviceSources.map((source) {
             return DropdownMenuItem(
               value: source,
-              child: Text(source),
+              child: Text(source, style: Theme.of(context).textTheme.bodyMedium),
             );
           }).toList(),
           onChanged: (value) {
@@ -289,32 +291,68 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
               _isManualEntry = value == 'Manual Entry';
             });
           },
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
     );
   }
 
-  Widget _buildContextField() {
-    return TextFormField(
-      controller: _contextController,
-      decoration: const InputDecoration(
-        labelText: 'Context (Optional)',
-        hintText: 'e.g., After exercise, Feeling stressed, Morning reading',
-        border: OutlineInputBorder(),
-      ),
-      maxLines: 2,
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required String hintText,
+    IconData? icon,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppTheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hintText,
+            prefixIcon: icon != null ? Icon(icon) : null,
+          ),
+          maxLines: maxLines,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
     );
   }
 
-  Widget _buildNotesField() {
-    return TextFormField(
-      controller: _notesController,
-      decoration: const InputDecoration(
-        labelText: 'Notes (Optional)',
-        hintText: 'Add any additional notes...',
-        border: OutlineInputBorder(),
+  Widget _buildSectionCard(List<Widget> children, {required String title}) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: AppSpacing.borderRadiusMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.m, AppSpacing.l, AppSpacing.xs),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.l, 0, AppSpacing.l, AppSpacing.l),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
       ),
-      maxLines: 3,
     );
   }
 
@@ -333,7 +371,7 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(bpError),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: AppTheme.errorColor,
           ),
         );
         return;
@@ -365,13 +403,19 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
           vitalSign.copyWith(id: widget.vitalSign!.id),
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(warning ?? 'Vital sign updated successfully')),
+          SnackBar(
+            content: Text(warning ?? 'Vital sign updated successfully'),
+            backgroundColor: AppTheme.primaryColor,
+          ),
         );
       } else {
         // Create new vital sign
         await notifier.createVitalSign(vitalSign);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(warning ?? 'Vital sign recorded successfully')),
+          SnackBar(
+            content: Text(warning ?? 'Vital sign recorded successfully'),
+            backgroundColor: AppTheme.primaryColor,
+          ),
         );
       }
 
@@ -380,7 +424,7 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save vital sign: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: AppTheme.errorColor,
         ),
       );
     }
@@ -404,126 +448,172 @@ class _AddVitalSignScreenState extends ConsumerState<AddVitalSignScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.vitalSign != null;
     
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit Vital Sign' : 'Add Vital Sign'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Vital Sign Type Selector
-              _buildTypeSelector(),
-              const SizedBox(height: 24),
+    return GradientOrbBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppTheme.onPrimaryColor,
+          elevation: 0,
+          title: Text(
+            isEditing ? 'Edit Vital Sign' : 'Add Vital Sign',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: AppTheme.onPrimaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionCard([
+                  _buildTypeSelector(),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildDeviceSourceSelector(),
+                ], title: 'Type & Source'),
+                const SizedBox(height: AppSpacing.l),
 
-              // Health Data Import
-              HealthDataImportWidget(
-                filterType: _selectedType,
-                onVitalSignImported: (vitalSign) {
-                  // Auto-fill form with imported data
-                  setState(() {
-                    _selectedType = vitalSign.type;
-                    _value1Controller.text = vitalSign.value1.toStringAsFixed(
-                      vitalSign.type == VitalSignType.bloodPressure ? 0 : 1,
-                    );
-                    if (vitalSign.value2 != null) {
-                      _value2Controller.text = vitalSign.value2!.toStringAsFixed(
-                        vitalSign.type == VitalSignType.bloodPressure ? 0 : 1,
+                _buildSectionCard([
+                  HealthDataImportWidget(
+                    filterType: _selectedType,
+                    onVitalSignImported: (vitalSign) {
+                      // Auto-fill form with imported data
+                      setState(() {
+                        _selectedType = vitalSign.type;
+                        _value1Controller.text = vitalSign.value1.toStringAsFixed(
+                          vitalSign.type == VitalSignType.bloodPressure ? 0 : 1,
+                        );
+                        if (vitalSign.value2 != null) {
+                          _value2Controller.text = vitalSign.value2!.toStringAsFixed(
+                            vitalSign.type == VitalSignType.bloodPressure ? 0 : 1,
+                          );
+                        }
+                        _readingTime = vitalSign.readingTime;
+                        _deviceSource = vitalSign.deviceSource;
+                        _isManualEntry = vitalSign.isManualEntry;
+                        
+                        if (vitalSign.context != null) {
+                          _contextController.text = vitalSign.context!;
+                        }
+                        
+                        if (vitalSign.notes != null) {
+                          _notesController.text = vitalSign.notes!;
+                        }
+                      });
+                      
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${vitalSign.type.displayName} data imported successfully'),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: AppTheme.primaryColor,
+                        ),
                       );
-                    }
-                    _readingTime = vitalSign.readingTime;
-                    _deviceSource = vitalSign.deviceSource;
-                    _isManualEntry = vitalSign.isManualEntry;
-                    
-                    if (vitalSign.context != null) {
-                      _contextController.text = vitalSign.context!;
-                    }
-                    
-                    if (vitalSign.notes != null) {
-                      _notesController.text = vitalSign.notes!;
-                    }
-                  });
-                  
-                  // Show success message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${vitalSign.type.displayName} data imported successfully'),
-                      duration: const Duration(seconds: 2),
+                    },
+                  ),
+                ], title: 'Health Data Integration'),
+                const SizedBox(height: AppSpacing.l),
+
+                _buildSectionCard([
+                  if (_selectedType.hasTwoValues) ...[
+                    _buildValueField(
+                      label: 'Systolic (Upper)',
+                      controller: _value1Controller,
+                      hintText: 'e.g., 120',
+                      validator: (value) => VitalSignValidation.validateVitalSignValue(
+                        value, 
+                        _selectedType,
+                        isFirstValue: true,
+                      ),
                     ),
-                  );
-                },
-              ),
+                    const SizedBox(height: AppSpacing.m),
+                    _buildValueField(
+                      label: 'Diastolic (Lower)',
+                      controller: _value2Controller,
+                      hintText: 'e.g., 80',
+                      validator: (value) => VitalSignValidation.validateVitalSignValue(
+                        value, 
+                        _selectedType,
+                        isFirstValue: false,
+                      ),
+                    ),
+                  ] else ...[
+                    _buildValueField(
+                      label: 'Value',
+                      controller: _value1Controller,
+                      hintText: 'Enter ${_selectedType.displayName.toLowerCase()} value',
+                      validator: (value) => VitalSignValidation.validateVitalSignValue(
+                        value, 
+                        _selectedType,
+                      ),
+                    ),
+                  ],
+                  if (_selectedType == VitalSignType.bloodSugar) ...[
+                    const SizedBox(height: AppSpacing.m),
+                    _buildMealMarkerSelector(),
+                  ],
+                ], title: 'Measurements'),
+                const SizedBox(height: AppSpacing.l),
 
-              // Value Fields
-              if (_selectedType.hasTwoValues) ...[
-                _buildValueField(
-                  label: 'Systolic (Upper)',
-                  controller: _value1Controller,
-                  hintText: 'e.g., 120',
-                  validator: (value) => VitalSignValidation.validateVitalSignValue(
-                    value, 
-                    _selectedType,
-                    isFirstValue: true,
+                _buildSectionCard([
+                  _buildDateTimePicker(),
+                ], title: 'Schedule'),
+                const SizedBox(height: AppSpacing.l),
+
+                _buildSectionCard([
+                  _buildTextField(
+                    label: 'Context (Optional)',
+                    controller: _contextController,
+                    hintText: 'e.g., After exercise, Morning reading',
+                    icon: Icons.info,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildTextField(
+                    label: 'Notes (Optional)',
+                    controller: _notesController,
+                    hintText: 'Add any additional notes...',
+                    icon: Icons.note,
+                    maxLines: 3,
+                  ),
+                ], title: 'Additional Details'),
+                const SizedBox(height: AppSpacing.xl),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: AppSpacing.buttonHeight,
+                  child: ElevatedButton(
+                    onPressed: _saveVitalSign,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: AppTheme.onPrimaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.borderRadiusSmall),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save),
+                        const SizedBox(width: AppSpacing.s),
+                        Text(
+                          isEditing ? 'Update Vital Sign' : 'Save Vital Sign',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.onPrimaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                _buildValueField(
-                  label: 'Diastolic (Lower)',
-                  controller: _value2Controller,
-                  hintText: 'e.g., 80',
-                  validator: (value) => VitalSignValidation.validateVitalSignValue(
-                    value, 
-                    _selectedType,
-                    isFirstValue: false,
-                  ),
-                ),
-              ] else ...[
-                _buildValueField(
-                  label: 'Value',
-                  controller: _value1Controller,
-                  hintText: 'Enter ${_selectedType.displayName.toLowerCase()} value',
-                  validator: (value) => VitalSignValidation.validateVitalSignValue(
-                    value, 
-                    _selectedType,
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.xxl),
               ],
-              const SizedBox(height: 16),
-
-              // Reading Time
-              _buildDateTimePicker(),
-              const SizedBox(height: 24),
-
-              // Meal Marker (for blood sugar)
-              _buildMealMarkerSelector(),
-              if (_selectedType == VitalSignType.bloodSugar) 
-                const SizedBox(height: 16),
-
-              // Device Source
-              _buildDeviceSourceSelector(),
-              const SizedBox(height: 16),
-
-              // Context Field
-              _buildContextField(),
-              const SizedBox(height: 16),
-
-              // Notes Field
-              _buildNotesField(),
-              const SizedBox(height: 32),
-
-              // Save Button
-              ElderlyFriendlyButton(
-                onPressed: _saveVitalSign,
-                text: isEditing ? 'Update Vital Sign' : 'Save Vital Sign',
-                icon: Icons.save,
-                fullWidth: true,
-              ),
-            ],
+            ),
           ),
         ),
       ),

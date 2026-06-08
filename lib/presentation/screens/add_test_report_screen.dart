@@ -5,10 +5,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/themes/app_theme.dart';
+import '../../core/constants/spacing_constants.dart';
 import '../../core/widgets/elderly_friendly_button.dart';
 import '../../core/utils/file_utils.dart';
 import '../../domain/entities/test_report.dart';
 import '../providers/test_report_provider.dart';
+import '../widgets/common/glass_widgets.dart';
 
 class AddTestReportScreen extends ConsumerStatefulWidget {
   const AddTestReportScreen({super.key});
@@ -56,210 +59,220 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Test Report'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Report type selector
-                    _buildReportTypeSelector(),
-                    const SizedBox(height: 24),
-
-                    // File upload section
-                    _buildFileUploadSection(),
-                    const SizedBox(height: 24),
-
-                    // Date
-                    _buildDatePicker(),
-                    const SizedBox(height: 16),
-
-                    // Test name
-                    _buildTextField(
-                      label: 'Test Name (Optional)',
-                      controller: _testNameController,
-                      hintText: 'e.g., Complete Blood Count',
-                      icon: Icons.biotech,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Lab name
-                    _buildTextField(
-                      label: 'Lab/Hospital Name (Optional)',
-                      controller: _labNameController,
-                      hintText: 'Enter lab or hospital name',
-                      icon: Icons.business,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Doctor name
-                    _buildTextField(
-                      label: 'Doctor Name (Optional)',
-                      controller: _doctorNameController,
-                      hintText: 'Enter doctor name',
-                      icon: Icons.person,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Notes
-                    _buildTextField(
-                      label: 'Notes (Optional)',
-                      controller: _notesController,
-                      hintText: 'Any additional notes about this test report',
-                      maxLines: 3,
-                      icon: Icons.note,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Add button
-                    _buildAddButton(context),
-                  ],
-                ),
-              ),
+    return GradientOrbBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppTheme.onPrimaryColor,
+          elevation: 0,
+          title: Text(
+            'Add Test Report',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: AppTheme.onPrimaryColor,
+              fontWeight: FontWeight.w600,
             ),
-    );
-  }
-
-  Widget _buildReportTypeSelector() {
-    return Card(
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Report Type',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _reportTypes.map((type) {
-                final isSelected = _selectedReportType == type['value'];
-                return ChoiceChip(
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
+          ),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(type['icon'] as IconData, size: 16),
-                      const SizedBox(width: 4),
-                      Text(type['label'] as String),
+                      // Report type selector
+                      _buildSectionCard([
+                        _buildReportTypeSelectorContent(),
+                      ], title: 'Report Type'),
+                      const SizedBox(height: AppSpacing.l),
+
+                      // File upload section
+                      _buildSectionCard([
+                        _buildFileUploadContent(),
+                      ], title: 'Test Report Document'),
+                      const SizedBox(height: AppSpacing.l),
+
+                      // Report Details
+                      _buildSectionCard([
+                        _buildDatePicker(),
+                        const SizedBox(height: AppSpacing.m),
+                        _buildTextField(
+                          label: 'Test Name (Optional)',
+                          controller: _testNameController,
+                          hintText: 'e.g., Complete Blood Count',
+                          icon: Icons.biotech,
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                        _buildTextField(
+                          label: 'Lab/Hospital Name (Optional)',
+                          controller: _labNameController,
+                          hintText: 'Enter lab or hospital name',
+                          icon: Icons.business,
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                        _buildTextField(
+                          label: 'Doctor Name (Optional)',
+                          controller: _doctorNameController,
+                          hintText: 'Enter doctor name',
+                          icon: Icons.person,
+                        ),
+                      ], title: 'Report Details'),
+                      const SizedBox(height: AppSpacing.l),
+
+                      // Notes
+                      _buildSectionCard([
+                        _buildTextField(
+                          label: 'Notes (Optional)',
+                          controller: _notesController,
+                          hintText: 'Any additional notes about this test report',
+                          maxLines: 3,
+                          icon: Icons.note,
+                        ),
+                      ], title: 'Additional Notes'),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Add button
+                      _buildAddButton(context),
+                      const SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedReportType = type['value'] as String;
-                      });
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+                ),
+              ),
       ),
     );
   }
 
-  Widget _buildFileUploadSection() {
-    return Card(
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Test Report File',
+  Widget _buildSectionCard(List<Widget> children, {required String title}) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: AppSpacing.borderRadiusMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.m, AppSpacing.l, AppSpacing.xs),
+            child: Text(
+              title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Upload a photo or document of your test report',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.l, 0, AppSpacing.l, AppSpacing.l),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
             ),
-            const SizedBox(height: 16),
+          ),
+        ],
+      ),
+    );
+  }
 
-            if (_selectedFile != null) ...[
-              _buildSelectedFileInfo(),
-              const SizedBox(height: 16),
+  Widget _buildReportTypeSelectorContent() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _reportTypes.map((type) {
+        final isSelected = _selectedReportType == type['value'];
+        return ChoiceChip(
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(type['icon'] as IconData, size: 16),
+              const SizedBox(width: 4),
+              Text(type['label'] as String),
             ],
+          ),
+          selected: isSelected,
+          onSelected: (selected) {
+            if (selected) {
+              setState(() {
+                _selectedReportType = type['value'] as String;
+              });
+            }
+          },
+        );
+      }).toList(),
+    );
+  }
 
-            Row(
-              children: [
-                Expanded(
-                  child: ElderlyFriendlyButton(
-                    onPressed: () => _pickImageFromGallery(),
-                    text: 'Gallery',
-                    icon: Icons.photo_library,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
-                    textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElderlyFriendlyButton(
-                    onPressed: () => _takePhotoWithCamera(),
-                    text: 'Camera',
-                    icon: Icons.camera_alt,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
-                    textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                ),
-              ],
+  Widget _buildFileUploadContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Upload a photo or document of your test report',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppTheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+
+        if (_selectedFile != null) ...[
+          _buildSelectedFileInfo(),
+          const SizedBox(height: AppSpacing.m),
+        ],
+
+        Row(
+          children: [
+            Expanded(
+              child: ElderlyFriendlyButton(
+                onPressed: () => _pickImageFromGallery(),
+                text: 'Gallery',
+                icon: Icons.photo_library,
+                backgroundColor: const Color(0x14FFFFFF),
+                textColor: AppTheme.onSurfaceColor,
+              ),
             ),
-            const SizedBox(height: 12),
-            ElderlyFriendlyButton(
-              onPressed: () => _pickFileFromStorage(),
-              text: 'Browse Files',
-              icon: Icons.insert_drive_file,
-              backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-              textColor: Theme.of(context).colorScheme.onSecondaryContainer,
+            const SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: ElderlyFriendlyButton(
+                onPressed: () => _takePhotoWithCamera(),
+                text: 'Camera',
+                icon: Icons.camera_alt,
+                backgroundColor: const Color(0x14FFFFFF),
+                textColor: AppTheme.onSurfaceColor,
+              ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.m),
+        ElderlyFriendlyButton(
+          onPressed: () => _pickFileFromStorage(),
+          text: 'Browse Files',
+          icon: Icons.insert_drive_file,
+          backgroundColor: const Color(0x14FFFFFF),
+          textColor: AppTheme.onSurfaceColor,
+          fullWidth: true,
+        ),
+      ],
     );
   }
 
   Widget _buildSelectedFileInfo() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          color: AppTheme.primaryColor.withOpacity(0.3),
         ),
       ),
       child: Row(
         children: [
           Icon(
             _getFileIcon(),
-            color: Theme.of(context).colorScheme.primary,
+            color: AppTheme.primaryColor,
             size: 32,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.m),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,8 +280,8 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
                 Text(
                   _fileName ?? 'Unknown file',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (_fileType != null) ...[
@@ -276,8 +289,8 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
                   Text(
                     'Type: $_fileType',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                      color: AppTheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
                 if (_fileSize != null) ...[
@@ -285,15 +298,15 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
                   Text(
                     'Size: ${_fileSize!.toStringAsFixed(1)} KB',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                      color: AppTheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.red),
+            icon: const Icon(Icons.close, color: AppTheme.errorColor),
             onPressed: () {
               setState(() {
                 _selectedFile = null;
@@ -329,30 +342,29 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
         Text(
           'Test Date',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            color: AppTheme.onSurfaceVariant,
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         InkWell(
           onTap: () => _selectDate(context),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-              ),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0x14FFFFFF),
+              border: Border.all(color: AppTheme.outlineColor),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, color: Colors.grey),
-                const SizedBox(width: 12),
+                const Icon(Icons.calendar_today, color: AppTheme.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.m),
                 Text(
                   DateFormat('MMMM dd, yyyy').format(_date),
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const Spacer(),
-                const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                const Icon(Icons.arrow_drop_down, color: AppTheme.primaryColor),
               ],
             ),
           ),
@@ -374,23 +386,18 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            color: AppTheme.onSurfaceVariant,
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         TextFormField(
           controller: controller,
           decoration: InputDecoration(
             hintText: hintText,
-            border: const OutlineInputBorder(),
-            prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: maxLines > 1 ? 16 : 0,
-            ),
+            prefixIcon: icon != null ? Icon(icon) : null,
           ),
           maxLines: maxLines,
-          textInputAction: TextInputAction.next,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
     );
@@ -403,8 +410,8 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
         onPressed: () => _addTestReport(context),
         text: 'Add Test Report',
         icon: Icons.add,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        textColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: AppTheme.primaryColor,
+        textColor: AppTheme.onPrimaryColor,
         fontSize: 18,
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
@@ -479,6 +486,7 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
       initialDate: _date,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
+      builder: AppTheme.datePickerThemeBuilder,
     );
 
     if (pickedDate != null) {
@@ -527,10 +535,11 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
 
       await ref.read(testReportListProvider.notifier).addReport(report);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Test report added successfully'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Test report added successfully'),
+          backgroundColor: AppTheme.primaryColor,
         ),
       );
 
@@ -550,7 +559,7 @@ class _AddTestReportScreenState extends ConsumerState<AddTestReportScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppTheme.errorColor,
       ),
     );
   }

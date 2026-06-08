@@ -323,6 +323,7 @@ class _VitalSignsDashboardScreenState extends ConsumerState<VitalSignsDashboardS
       childAspectRatio: 1.5,
       mainAxisSpacing: AppSpacing.s,
       crossAxisSpacing: AppSpacing.s,
+      padding: EdgeInsets.zero,
       children: VitalSignType.values.map((type) {
         final latest = latestReadings[type];
         final isAbnormal = latest != null && !latest.isWithinTargetRange;
@@ -530,6 +531,7 @@ Widget build(BuildContext context) {
                             childAspectRatio: 1.5,
                             mainAxisSpacing: AppSpacing.s,
                             crossAxisSpacing: AppSpacing.s,
+                            padding: EdgeInsets.zero,
                             children: [
                               _buildStatisticsCard(
                                 title: 'Average',

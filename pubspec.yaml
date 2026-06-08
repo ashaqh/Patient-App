@@ -60,9 +60,14 @@ dependencies:
   
   # File Opening
   open_file: ^3.3.3
+  webview_flutter: ^4.8.0
 
   # Fonts
   google_fonts: ^6.2.0
+  flutter_animate: ^4.5.0
+  package_info_plus: ^8.0.2
+  in_app_review: ^2.0.9
+  url_launcher: ^6.3.0
 
   # Charting Libraries
   fl_chart: ^0.66.0  # Free alternative for charts - compatible version
@@ -86,15 +91,12 @@ dependencies:
   # Network Information
   connectivity_plus: ^6.0.3
   network_info_plus: ^7.0.0
-  
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-  mocktail: ^1.0.2
   flutter_timezone: ^5.0.2
 
 # For information on the generic Dart part of this file, see the
+
 # following page: https://dart.dev/tools/pub/pubspec
+
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -106,3 +108,18 @@ flutter:
 
   assets:
     - assets/images/
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.2
+  sqflite_common_ffi: ^2.4.0+3
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name: sqlite3
+      name_windows: winsqlite3
+

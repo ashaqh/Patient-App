@@ -375,7 +375,11 @@ class _HealthDataImportWidgetState
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minVerticalPadding: 12,
+        isThreeLine: true,
         leading: Icon(
+
           _getVitalSignIcon(type),
           color: Theme.of(context).colorScheme.primary,
         ),

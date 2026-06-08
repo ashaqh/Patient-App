@@ -165,7 +165,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
     int? limit,
   }) async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       
       final where = <String>[];
       final whereArgs = <dynamic>[];
@@ -213,7 +214,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
     int? limit,
   }) async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       
       final where = <String>[];
       final whereArgs = <dynamic>[];
@@ -263,7 +265,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
     int? offset,
   }) async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       
       final where = <String>[];
       final whereArgs = <dynamic>[];
@@ -294,7 +297,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
         offset: offset,
       );
 
-      final decryptedMaps = await _auditLogDataSource._encryptionService.batchDecryptAuditLogs(maps);
+      final decryptedMaps = await _auditLogDataSource.decryptAuditLogs(maps);
+
       return decryptedMaps.map((map) => AuditLog.fromMap(map)).toList();
     } catch (e) {
       ErrorUtils.logError('Failed to get security incidents: $e');
@@ -306,8 +310,9 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
   Future<String> exportAuditLogs({
     DateTime? startDate,
     DateTime? endDate,
-    required String format,
+    String format = 'json',
   }) {
+
     // Implementation for audit log export
     // This would typically generate CSV, JSON, or PDF files
     // For now, return a placeholder implementation
@@ -333,7 +338,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
   @override
   Future<Map<String, dynamic>> getRetentionStatus() async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       
       // Get oldest and newest audit logs
       final oldestResult = await db.rawQuery('''
@@ -381,7 +387,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
   @override
   Future<bool> validateAuditLogIntegrity() async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       
       // Check for missing required fields
       final integrityCheck = await db.rawQuery('''
@@ -430,7 +437,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
   @override
   Future<int> clearAllAuditLogs() async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       return await db.delete('audit_logs');
     } catch (e) {
       ErrorUtils.logError('Failed to clear all audit logs: $e');
@@ -441,11 +449,13 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
   @override
   Future<void> batchCreateAuditLogs(List<AuditLog> auditLogs) async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       await db.transaction((txn) async {
         for (final auditLog in auditLogs) {
           final auditLogMap = auditLog.toMap();
-          final encryptedMap = await _auditLogDataSource._encryptionService.encryptAuditLog(auditLogMap);
+          final encryptedMap = await _auditLogDataSource.encryptAuditLog(auditLogMap);
+
           await txn.insert('audit_logs', encryptedMap);
         }
       });
@@ -470,7 +480,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
     int? offset,
   }) async {
     try {
-      final db = await _auditLogDataSource._databaseHelper.database;
+      final db = await _auditLogDataSource.database;
+
       
       final where = <String>[];
       final whereArgs = <dynamic>[];
@@ -532,7 +543,8 @@ class AuditLogRepositoryImpl implements AuditLogRepository {
         offset: offset,
       );
 
-      final decryptedMaps = await _auditLogDataSource._encryptionService.batchDecryptAuditLogs(maps);
+      final decryptedMaps = await _auditLogDataSource.decryptAuditLogs(maps);
+
       return decryptedMaps.map((map) => AuditLog.fromMap(map)).toList();
     } catch (e) {
       ErrorUtils.logError('Failed to search audit logs: $e');

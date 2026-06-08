@@ -189,7 +189,7 @@ class Medicine {
         name.hashCode ^
         dosage.hashCode ^
         frequency.hashCode ^
-        times.hashCode ^
+        Object.hashAll(times) ^
         startDate.hashCode ^
         endDate.hashCode ^
         notes.hashCode ^
